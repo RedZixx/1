@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RedZix</title>
+    <style>
+        /* Styles Globaux */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #8000a7;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+        }
+
+        nav ul li {
+            margin: 0 15px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+
+        section {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .products {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .product-card {
+            background: white;
+            padding: 1.5rem;
+            margin: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            text-align: center;
+        }
+
+        .product-card img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .product-card h3 {
+            color: #0078D7;
+            margin: 10px 0;
+        }
+
+        .product-card p {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background-color: #0078D7;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: #005fa3;
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .product-card {
+                width: 90%;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+
+        <h1>Redzix</h1>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <nav>
+            <ul>
+                <li><a href="#home">Accueil</a></li>
+                <li><a href="#games">Jeux</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="games">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <div class="products">
+            <div class="product-card">
+                <img src="https://wallpapercave.com/wp/wp13935942.jpg" alt="Jeu 1">
+                <h3>Blood Strike</h3>
+                <p>Blood Strike is a fast-paced battle royale mobile FPS !!
+                </p>
+                <a href="https://adl.netease.com/d/g/bloodstrike/c/pc" class="btn">Download</a>
+
+            </div>
+            <div class="product-card">
+                <img src="https://www.freefiremania.com.br/prints/now-gg-como-jogar-free-fire-no-pc-ou-celular-sem-nenhuma-instalacao.jpg" alt="Jeu 2">
+                <h3>Free fire </h3>
+                <p>restez dans la zone de jeu, pillez vos ennemis et devenez le dernier homme debout
+                </p>
+                <a href="https://www.bluestacks.com/download.html?utm_campaign=download-page-fr" class="btn">Download</a>
+            </div>
+            <div class="product-card">
+                <img src="https://techcrunch.com/wp-content/uploads/2021/07/roblox-logo.png?resize=1097,617" alt="Jeu 3">
+                <h3>ROBLOX</h3>
+                <p>l'univers virtuel ultime qui vous permet de créer, de partager des expériences vos amis
+                </p>
+                <a href="https://www.roblox.com/download/client?os=win" class="btn">Download</a>
+            </div>
+        </div>
+    </section>
+
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <footer>
+        <p>&copy;RedZix</p>
+    </footer>
+</body>
+</html>
