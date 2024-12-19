@@ -1,1 +1,315 @@
-.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Elevate your gaming journey with Redzix. Discover and download the most immersive games on a sleek, professional platform.">
+    <meta name="author" content="Redzix Development Team">
+    <title>Redzix | Gaming Reinvented</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Base Styling */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #ddd;
+            background: #121212;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 1em 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2em;
+            font-weight: 700;
+            color: #ff005c;
+            text-transform: uppercase;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1.5em;
+        }
+
+        .nav a {
+            color: #ddd;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1em;
+            transition: color 0.3s ease;
+        }
+
+        .nav a:hover {
+            color: #ff005c;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: radial-gradient(circle, #1c1c2b, #121212);
+            color: #fff;
+            padding: 5em 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: -100px;
+            width: 300px;
+            height: 300px;
+            background: #ff005c;
+            opacity: 0.3;
+            filter: blur(150px);
+            z-index: 1;
+        }
+
+        .hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 0.5em;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            margin-bottom: 1.5em;
+            color: #bbb;
+            position: relative;
+            z-index: 2;
+        }
+
+        .btn-primary {
+            text-decoration: none;
+            background: #ff005c;
+            color: #fff;
+            padding: 1em 2em;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .btn-primary:hover {
+            background: #ff2d7a;
+        }
+
+        /* Games Section */
+        .games {
+            padding: 3em 0;
+            background: #1a1a1a;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 2em;
+            font-weight: 700;
+            color: #ff005c;
+            position: relative;
+        }
+
+        .game-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2em;
+        }
+
+        .game-card {
+            background: #222;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 25px rgba(255, 0, 92, 0.4);
+        }
+
+        .game-card img {
+            width: 100%;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .game-card h3 {
+            margin: 1em 0 0.5em;
+            font-size: 1.5em;
+            color: #ff005c;
+        }
+
+        .game-card p {
+            color: #bbb;
+            font-size: 1em;
+            margin-bottom: 1em;
+        }
+
+        .btn-secondary {
+            text-decoration: none;
+            background: #ff005c;
+            color: #fff;
+            padding: 0.8em 1.5em;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #ff2d7a;
+        }
+
+        /* Contact Section */
+        .contact {
+            padding: 3em 0;
+            background: #121212;
+            color: #ddd;
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-form input, .contact-form textarea {
+            padding: 1em;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+            width: 100%;
+            background: #222;
+            color: #ddd;
+        }
+
+        .contact-form button {
+            background: #ff005c;
+            color: #fff;
+            border: none;
+            padding: 1em 2em;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .contact-form button:hover {
+            background: #ff2d7a;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            color: #ddd;
+            text-align: center;
+            padding: 1.5em 0;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #ff005c;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Redzix</h1>
+            <nav class="nav">
+                <a href="#home">Home</a>
+                <a href="#games">Games</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="container">
+            <h2>Level Up Your Gaming World</h2>
+            <p>Unleash new adventures with Redzix. Your gateway to extraordinary gaming.</p>
+            <a href="#games" class="btn-primary">Explore Games</a>
+        </div>
+    </section>
+
+    <section id="games" class="games">
+        <div class="container">
+            <h2 class="section-title">Explore Our Library</h2>
+            <div class="game-list">
+                <div class="game-card">
+                    <img src="https://via.placeholder.com/300x200" alt="Adventure Quest">
+                    <h3>Adventure Quest</h3>
+                    <p>Dive into magical lands and epic challenges.</p>
+                    <a href="#" class="btn-secondary">Download</a>
+                </div>
+                <div class="game-card">
+                    <img src="https://via.placeholder.com/300x200" alt="Racing Fever">
+                    <h3>Racing Fever</h3>
+                    <p>Experience the thrill of speed and precision.</p>
+                    <a href="#" class="btn-secondary">Download</a>
+                </div>
+                <div class="game-card">
+                    <img src="https://via.placeholder.com/300x200" alt="Puzzle Master">
+                    <h3>Puzzle Master</h3>
+                    <p>Test your intellect with mind-bending puzzles.</p>
+                    <a href="#" class="btn-secondary">Download</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Get in Touch</h2>
+            <form action="#" method="post" class="contact-form">
+                <input type="text" name="name" placeholder="Your Name" required>
+                <input type="email" name="email" placeholder="Your Email" required>
+                <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Redzix. All Rights Reserved. | <a href="#">Privacy Policy</a></p>
+        </div>
+    </footer>
+</body>
+</html>
+
