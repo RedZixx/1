@@ -1,0 +1,188 @@
+
+<style>
+.contact {
+    padding: 5rem 2rem;
+    background: linear-gradient(135deg, #121212, #0a0a0a);
+    text-align: center;
+    color: #fff;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    margin: 2rem auto;
+    width: 80%;
+    max-width: 1000px;
+    position: relative;
+}
+
+.contact::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    height: 300%;
+    background: rgba(255, 255, 255, 0.2);
+    animation: glow-effect 2s infinite alternate;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: 0.4;
+}
+
+.contact h2 {
+    font-size: 2.5rem;
+    color: #00ff88;
+    margin-bottom: 2rem;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.contact-form input,
+.contact-form textarea {
+    background: #222;
+    border: 2px solid #444;
+    color: #fff;
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    transition: all 0.3s ease;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+    border-color: #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+    outline: none;
+}
+
+.contact-form button {
+    background: #00ff88;
+    color: #000;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-form button:hover {
+    background: #0088ff;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.contact-form button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 255, 136, 0.4), rgba(0, 255, 136, 0.1));
+    transform: translate(-50%, -50%);
+    animation: pulse 1.5s infinite alternate;
+    border-radius: 50%;
+}
+
+.contact-form button:active {
+    transform: scale(0.98);
+    box-shadow: none;
+}
+
+/* Animation pour le bouton de contact */
+@keyframes pulse {
+    0% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+}
+
+/* Animation d'éclat pour la section contact */
+@keyframes glow-effect {
+    0% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
+}
+
+/* Footer */
+footer {
+    background: #121212;
+    padding: 2rem;
+    text-align: center;
+    color: #bbb;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+}
+
+footer a {
+    color: #00ff88;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: #ffcc00;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .contact {
+        padding: 3rem 1.5rem;
+        margin: 1.5rem;
+    }
+
+    .contact h2 {
+        font-size: 2rem;
+    }
+
+    .contact-form {
+        max-width: 90%;
+    }
+
+    .contact-form input,
+    .contact-form textarea {
+        font-size: 0.9rem;
+    }
+
+    .contact-form button {
+        font-size: 1rem;
+    }
+}
+</style>
+<section id="contact" class="contact">
+    <h2>Contactez-Nous</h2>
+    <form class="contact-form">
+        <input type="text" name="name" placeholder="Votre Nom" required>
+        <input type="email" name="email" placeholder="Votre Email" required>
+        <textarea name="message" rows="5" placeholder="Votre message" required></textarea>
+        <button type="submit">Envoyer le message</button>
+    </form>
+</section>
+
+<!-- Footer -->
+<footer>
+    <p>© 2025 Redzix <a href="file:///C:/Users/Potato/Documents/index.html#contact">Trouvez-nous ici</a></p>
+</footer>
+</body>
+</html>
