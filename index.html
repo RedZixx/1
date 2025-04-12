@@ -1,506 +1,1933 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
-    <title>Redzix store</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combat 2D Ultra</title>
     <style>
-        /* الأساسيات */
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@500;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: 'Tajawal', sans-serif;
-        background-color: #121212; /* خلفية موحدة بدون تدرجات */
-        color: #fff;
-        scroll-behavior: smooth;
-        line-height: 1.6; /* تحسين قابلية القراءة */
+            background: linear-gradient(135deg, #1900ff, #008cff, #24243e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            color: white;
         }
 
-        /* الهيدر */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.9);
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 30px rgba(12, 48, 168, 0.6);
+            border-radius: 8px;
+        }
+
+        canvas {
+            border: 4px solid #444;
+            border-radius: 8px;
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
+            z-index: 10;
         }
 
-        .logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 0 #3c6f37;
-            font-family: 'Press Start 2P', sans-serif; /* الخط المخصص */
-        }
-
-        nav a {
-            margin: 0 0.5rem;
-            color: #fff;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1rem;
-            transition: color 0.3s ease-in-out;
-        }
-
-        nav a:hover {
-            color: #00ff88;
-        }
-
-        nav {
-            display: flex;
-        }
-
-        /* البطل */
-        .hero {
-            height: 100vh;
-            background: url('https://images.unsplash.com/photo-1555705059-d0dfdecc49c6?fit=crop&w=1920&q=80') no-repeat center center/cover;
+        .playerInfo {
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 5px;
+        }
+
+        .playerName {
+            font-size: 18px;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+            font-weight: bold;
+        }
+
+        .healthContainer {
+            position: relative;
+            width: 300px;
+        }
+
+        .healthBar {
+            height: 25px;
+            background-color: rgba(20, 20, 20, 0.7);
+            border: 2px solid #555;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .healthBarInner {
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        #player1Health {
+            background: linear-gradient(90deg, #ff0000, #ff6347);
+            box-shadow: 0 0 8px #ff0000;
+        }
+
+        #player2Health {
+            background: linear-gradient(90deg, #4169e1, #00bfff);
+            box-shadow: 0 0 8px #4169e1;
+        }
+
+        .healthText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #timerContainer {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #888;
+            border-radius: 12px;
+            padding: 5px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #timerLabel {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        #timer {
+            font-size: 32px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+            font-weight: bold;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+            display: none;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        #gameResultContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        #gameResultTitle {
+            font-family: 'Bangers', cursive;
+            font-size: 72px;
+            color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+            margin-bottom: 20px;
             text-align: center;
-            animation: fadeIn 2s ease-in-out;
-            padding: 1rem;
         }
 
-        .hero h1 {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 0 #3c6f37;
-            font-family: 'Press Start 2P', sans-serif; /* الخط المخصص */
+        #gameResult {
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            margin: 1rem 0;
-            max-width: 600px;
+        #gameStats {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
         }
 
-        .hero .btn {
-            background: linear-gradient(45deg, #00ff88, #0088ff);
-            color: #000;
-            padding: 0.8rem 2rem;
-            font-size: 1rem;
-            font-weight: bold;
-            text-transform: uppercase;
+        .playerStats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .statsTitle {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+
+        .statLine {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        #buttonContainer {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .gameButton {
+            padding: 12px 25px;
+            font-size: 18px;
+            font-family: 'Orbitron', sans-serif;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: transform 0.3s ease, background 0.3s ease;
-        }
-
-        .hero .btn:hover {
-            transform: scale(1.1);
-            background: linear-gradient(45deg, #0088ff, #00ff88);
-        }
-
-        /* قسم المميزات */
-        .features {
-            padding: 3rem 1rem;
-            background: #000000;
-            text-align: center;
-        }
-
-        .features h2 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
+            transition: all 0.3s ease;
             text-transform: uppercase;
-            color: #00ff88;
+            letter-spacing: 1px;
         }
 
-        .features .cards {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            justify-items: center;
+        #restartButton {
+            background: linear-gradient(145deg, #ff416c, #ff4b2b);
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 65, 108, 0.7);
         }
 
-        .card {
-            background: #1e1e1e;
-            border-radius: 10px;
-            padding: 1rem;
+        #restartButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(255, 65, 108, 0.9);
+        }
+
+        #menuButton {
+            background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
+            color: white;
+            box-shadow: 0 0 10px rgba(58, 58, 58, 0.7);
+        }
+
+        #menuButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(58, 58, 58, 0.9);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 15px;
             width: 100%;
-            max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.151);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            font-size: 14px;
         }
 
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        .controlSet {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .card img {
+        .controlTitle {
+            color: #ffcc00;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .controlKey {
+            color: #00ffff;
+            margin: 0 3px;
+            padding: 2px 6px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+
+        #splashScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 10px;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
         }
 
-        .card h3 {
-            margin: 1rem 0;
-            font-size: 1.3rem;
-            color: #1fe281;
-        }
-
-        .card p {
-            line-height: 1.6;
-            font-size: 1rem;
-        }
-
-        /* الفوتر */
-        footer {
-            background: #0a0a0a;
-            padding: 1rem;
+        #gameTitle {
+            font-family: 'Bangers', cursive;
+            font-size: 80px;
+            color: #ffcc00;
+            text-shadow: 0 0 30px rgba(255, 204, 0, 0.8), 0 0 15px rgba(255, 0, 0, 0.8);
+            margin-bottom: 40px;
             text-align: center;
-            color: #777;
+            animation: pulse 2s infinite;
+            transform-origin: center;
         }
 
-        footer a {
-            color: #00ff88;
-            text-decoration: none;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
-        footer a:hover {
-            text-decoration: underline;
+        #startButton {
+            background: linear-gradient(145deg, #00b4db, #0083b0);
+            color: white;
+            padding: 15px 40px;
+            font-size: 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 0 0 20px rgba(0, 180, 219, 0.7);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-/* Basic gaming-style button */
-button {
-    padding: 10px 10px;
-    font-size: 12px;
-    font-weight: bold;
-    color: #ffcc00; /* Gold text color for a more striking effect */
-    background-color: #038f2d; /* Bright blue background */
-    border: 3px solid #038f2d;
-    border-radius: 12px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
 
-    text-align: center;
-    font-family: 'Press Start 2P', cursive; /* Retro pixelated font for gaming */
-}
+        #startButton:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(0, 180, 219, 0.9);
+        }
 
-/* Glowing effect */
-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 300%;
-    height: 300%;
-    background: linear-gradient(45deg, rgba(255, 255, 255, 0.267), rgba(255, 255, 255, 0.247), rgba(255, 255, 255, 0.356));
-    animation: glow 1.5s infinite alternate;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    opacity: 0.5;
-}
+        #comboIndicator1, #comboIndicator2 {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            transition: opacity 0.2s, transform 0.5s;
+        }
 
-/* Hover effect with scaling and glowing */
-button:hover {
-    background-color: #1aff38; /* Bright orange/red */
-    border-color: #1aff38;
-    transform: scale(1.1); /* Scale up for emphasis */
+        #comboIndicator1 {
+            color: #ff6347;
+        }
 
-    color: #ffffff; /* Change text color to white when hovered */
-}
+        #comboIndicator2 {
+            color: #00bfff;
+        }
 
-/* Focus effect with glow */
-button:focus {
-    outline: none;
+        .powerupIndicator {
+            position: absolute;
+            bottom: 80px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 5px;
+            font-size: 14px;
+            color: #ffcc00;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
 
-}
+        #powerup1 {
+            left: 20px;
+        }
 
-/* Active effect for "press" effect */
-button:active {
-    transform: scale(0.98); /* Slight shrink effect */
-    box-shadow: none; /* Remove shadow when clicked */
-}
+        #powerup2 {
+            right: 20px;
+        }
 
-/* Glowing animation */
-@keyframes glow {
-    0% {
-        transform: scale(1);
-        opacity: 0.3;
-    }
-    100% {
-        transform: scale(1.3);
-        opacity: 1;
-    }
-}
+        #fpsCounter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #aaa;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border-radius: 4px;
+            z-index: 40;
+        }
 
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
 
-        /* التأثيرات */
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        /* وسائل الإعلام */
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                padding: 1rem;
-            }
-
-            nav {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            nav a {
-                margin: 0.5rem;
-            }
-
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-
-            .features h2 {
-                font-size: 2rem;
-            }
+        .fadeIn {
+            animation: fadeIn 1s;
         }
+
+        #particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+
+        #onlineScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 30;
+}
+
+#onlineTitle {
+    font-family: 'Bangers', cursive;
+    font-size: 60px;
+    color: #4169e1;
+    text-shadow: 0 0 30px rgba(65, 105, 225, 0.8);
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+#connectionControls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 80%;
+    max-width: 500px;
+    background: rgba(30, 30, 50, 0.7);
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inputGroup label {
+    font-size: 16px;
+    color: #aaa;
+}
+
+.inputGroup input {
+    padding: 12px;
+    font-size: 18px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #555;
+    border-radius: 5px;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+}
+
+#buttonGroup {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.onlineButton {
+    background: linear-gradient(145deg, #4169e1, #00bfff);
+    color: white;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    box-shadow: 0 0 10px rgba(65, 105, 225, 0.5);
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.onlineButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px rgba(65, 105, 225, 0.8);
+}
+
+.onlineButton:disabled {
+    background: #777;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#backToMenuButton {
+    margin-top: 20px;
+}
+
+#waitingRoom {
+    background: rgba(30, 30, 50, 0.7);
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#waitingRoom h2 {
+    color: #4169e1;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+#roomCode {
+    font-size: 24px;
+    color: #ffcc00;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+#waitingMessage {
+    margin: 20px 0;
+    color: #aaa;
+}
+
+#playersList {
+    margin: 15px 0;
+    text-align: left;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    min-height: 60px;
+}
+
+#playersList .player {
+    padding: 8px;
+    margin: 5px 0;
+    background: rgba(65, 105, 225, 0.2);
+    border-radius: 4px;
+}
+
+#playersList .player.self {
+    border-left: 3px solid #00bfff;
+}
+
+#playersList .player.host::after {
+    content: " (Hôte)";
+    color: #ffcc00;
+}
+
+#startOnlineGameButton {
+    margin-top: 15px;
+    width: 100%;
+}
+
+#leaveRoomButton {
+    margin-top: 10px;
+    width: 100%;
+    background: linear-gradient(145deg, #777, #555);
+}
+
+/* Modifier le splashScreen pour ajouter des boutons */
+#menuButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#startButton, #onlineButton {
+    background: linear-gradient(145deg, #00b4db, #0083b0);
+    color: white;
+    padding: 15px 40px;
+    min-width: 250px;
+    font-size: 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    box-shadow: 0 0 20px rgba(0, 180, 219, 0.7);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+#onlineButton {
+    background: linear-gradient(145deg, #4169e1, #00bfff);
+    box-shadow: 0 0 20px rgba(65, 105, 225, 0.7);
+}
+
+#startButton:hover, #onlineButton:hover {
+    transform: translateY(-5px);
+}
+
+/* Ajout d'un indicateur de latence */
+#pingIndicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 12px;
+    color: #aaa;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 3px 6px;
+    border-radius: 4px;
+    z-index: 40;
+    display: none;
+}
+
+
     </style>
 </head>
 <body>
-    <!-- الهيدر -->
-    <header>
-        <div class="logo">Redzix</div>
-        <nav>
-            <a href>Home</a>
-            <a href="">Features</a>
-            <a href="contactez-nous.html">Contact Us</a>
-        </nav>
-    </header>
-
-    <!-- قسم البطل -->
-    <section id="home" class="hero">
-        <h1>Wellcome To Redzix store</h1>
-        <p>best site of dowloading games</p>
-        <button class="btn">انطلقنا !!</button>
-    </section>
-
-    <!-- قسم المميزات -->
-    <section id="features" class="features">
-           <h2>&nbsp;</h2>
-        <div class="cards">
-            <div class="card">
-                <img src="https://wallpapercave.com/wp/wp13935943.jpg" alt="ألعاب متنوعة">
-                <h3>Blood Strike</h3>
-                
-                <button><a href="https://adl.netease.com/d/g/bloodstrike/c/pc">Dowload</a></button>
-            </div>
-            <div class="card">
-                <img src="https://kaartdirect.be/storage/thumbnails/default/1e/g0/9glsmjeso80sg4koccc4s.png?p=kaartdirect.be%2Fimages%2Fplatforms%2Fgaming-roblox-banner-1676878686.png&s=https&widen=1000">
-                <h3>Roblox</h3>
-                
-                <button><a href="https://adl.netease.com/d/g/bloodstrike/c/pc">Dowload</a></button>
+    <div id="particles"></div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1024" height="576"></canvas>
+       
+        <div id="gameUI">
+            <div class="playerInfo">
+                <div class="playerName">JOUEUR 1</div>
+                <div class="healthContainer">
+                    <div class="healthBar">
+                        <div id="player1Health" class="healthBarInner"></div>
+                        <div class="healthText">100/100</div>
+                    </div>
+                </div>
             </div>
            
-            <div class="card">
-                <img src="storage/thumbnails/default/1e/g0/9glsmjeso80sg4koccc4s.png?p=kaartdirect.be%2Fimages%2Fplatforms%2Fgaming-roblox-banner-1676878686.png&s=https&widen=1000">
-                <h3>Roblox</h3>
-                
-                <button><a href="https://adl.netease.com/d/g/bloodstrike/c/pc">Dowload</a></button>
+            <div id="timerContainer">
+                <div id="timerLabel">TEMPS</div>
+                <div id="timer">90</div>
             </div>
-
+           
+            <div class="playerInfo">
+                <div class="playerName">JOUEUR 2</div>
+                <div class="healthContainer">
+                    <div class="healthBar">
+                        <div id="player2Health" class="healthBarInner"></div>
+                        <div class="healthText">100/100</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </section>
-    
-<style>
-    .contact {
-        padding: 5rem 2rem;
-        background: linear-gradient(135deg, #121212, #0a0a0a);
-        text-align: center;
-        color: #fff;
-        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-        border-radius: 15px;
-        margin: 2rem auto;
-        width: 80%;
-        max-width: 1000px;
-        position: relative;
-    }
-    
-
-    .contact h2 {
-        font-size: 2.5rem;
-        color: #00ff88;
-        margin-bottom: 2rem;
-        font-family: 'Press Start 2P', cursive;
-    }
-    
-    .contact-form {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    
-    .contact-form input,
-    .contact-form textarea {
-        background: #222;
-        border: 2px solid #047a00;
-        color: #fff;
-        padding: 1rem;
-        font-size: 1rem;
-        border-radius: 10px;
-        width: 100%;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
-        transition: all 0.3s ease;
-    }
-    
-    .contact-form input:focus,
-    .contact-form textarea:focus {
-        border-color: #00ff88;
-        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
-        outline: none;
-    }
-    
-    .contact-form button {
-        background: #00ff88;
-        color: #000;
-        padding: 1rem 2rem;
-        font-size: 1.2rem;
-        font-weight: bold;
-        text-transform: uppercase;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .contact-form button:hover {
-        background: #0088ff;
-        color: #fff;
-        transform: scale(1.1);
-    }
-    
-    .contact-form button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(0, 255, 136, 0.4), rgba(0, 255, 136, 0.1));
-        transform: translate(-50%, -50%);
-        animation: pulse 1.5s infinite alternate;
-        border-radius: 50%;
-    }
-    
-    .contact-form button:active {
-        transform: scale(0.98);
-        box-shadow: none;
-    }
-    
-    /* Animation pour le bouton de contact */
-    @keyframes pulse {
-        0% {
-            opacity: 0.3;
-            transform: scale(1);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1.5);
-        }
-    }
-    
-    /* Animation d'éclat pour la section contact */
-    @keyframes glow-effect {
-        0% {
-            transform: scale(1);
-            opacity: 0.3;
-        }
-        100% {
-            transform: scale(1.3);
-            opacity: 1;
-        }
-    }
-    
-    /* Footer */
-    footer {
-        background: #121212;
-        padding: 2rem;
-        text-align: center;
-        color: #bdbdbd;
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
-    }
-    
-    footer a {
-        color: #00ff88;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-    
-    footer a:hover {
-        color: #ffcc00;
-    }
-    
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .contact {
-            padding: 3rem 1.5rem;
-            margin: 1.5rem;
-        }
-    
-        .contact h2 {
-            font-size: 2rem;
-        }
-    
-        .contact-form {
-            max-width: 90%;
-        }
-    
-        .contact-form input,
-        .contact-form textarea {
-            font-size: 0.9rem;
-        }
-    
-        .contact-form button {
-            font-size: 1rem;
-        }
-    }
-    </style>
-    <section id="contact" class="contact">
-        <h2>Contactez-Nous</h2>
-        <form class="contact-form">
-            <input type="text" name="name" placeholder="Votre Nom" required>
-            <input type="email" name="email" placeholder="Votre Email" required>
-            <textarea name="message" rows="5" placeholder="Votre message" required></textarea>
-            <button type="submit">Envoyer le message</button>
-        </form>
-    </section>
+       
+        <div id="comboIndicator1"></div>
+        <div id="comboIndicator2"></div>
+        <div id="powerup1" class="powerupIndicator"></div>
+        <div id="powerup2" class="powerupIndicator"></div>
+       
+        <div id="controls">
+            <div class="controlSet">
+                <div class="controlTitle">JOUEUR 1</div>
+                <div><span class="controlKey">Q</span>/<span class="controlKey">D</span> pour se déplacer</div>
+                <div><span class="controlKey">Z</span> pour sauter | <span class="controlKey">E</span> pour attaquer</div>
+                <div><span class="controlKey">A</span> pouvoir spécial</div>
+            </div>
+            <div class="controlSet">
+                <div class="controlTitle">JOUEUR 2</div>
+                <div><span class="controlKey">←</span>/<span class="controlKey">→</span> pour se déplacer</div>
+                <div><span class="controlKey">↑</span> pour sauter | <span class="controlKey">↓</span> pour attaquer</div>
+                <div><span class="controlKey">M</span> pouvoir spécial</div>
+            </div>
+        </div>
+       
+        <div id="gameOverScreen">
+            <div id="gameResultContainer">
+                <div id="gameResultTitle">COMBAT TERMINÉ</div>
+                <div id="gameResult"></div>
+                <div id="gameStats">
+                    <div class="playerStats">
+                        <div class="statsTitle">JOUEUR 1</div>
+                        <div class="statLine">Coups donnés: <span id="player1Hits">0</span></div>
+                        <div class="statLine">Dégâts infligés: <span id="player1Damage">0</span></div>
+                        <div class="statLine">Combos: <span id="player1Combos">0</span></div>
+                    </div>
+                    <div class="playerStats">
+                        <div class="statsTitle">JOUEUR 2</div>
+                        <div class="statLine">Coups donnés: <span id="player2Hits">0</span></div>
+                        <div class="statLine">Dégâts infligés: <span id="player2Damage">0</span></div>
+                        <div class="statLine">Combos: <span id="player2Combos">0</span></div>
+                    </div>
+                </div>
+            </div>
+            <div id="buttonContainer">
+                <button id="restartButton" class="gameButton">Rejouer</button>
+                <button id="menuButton" class="gameButton">Menu</button>
+            </div>
+        </div>
        
 
-    <!-- الفوتر -->
-    <footer>
-        <p>© 2025<a href="contactez-nous.html">&nbsp;&nbsp;Contact Us</a></p>
-    </footer>
+        <div id="fpsCounter">FPS: 60</div>
+    </div>
+
+    <div id="onlineScreen">
+        <div id="onlineTitle">MODE EN LIGNE</div>
+        <div id="connectionControls">
+            <div class="inputGroup">
+                <label for="playerName">Votre nom:</label>
+                <input type="text" id="playerName" placeholder="Entrez votre nom">
+            </div>
+            <div class="inputGroup">
+                <label for="roomId">Code de salle:</label>
+                <input type="text" id="roomId" placeholder="Créer ou rejoindre une salle">
+            </div>
+            <div id="buttonGroup">
+                <button id="createRoomButton" class="onlineButton">Créer une salle</button>
+                <button id="joinRoomButton" class="onlineButton">Rejoindre</button>
+            </div>
+        </div>
+        <div id="waitingRoom" style="display: none;">
+            <h2>Salle d'attente</h2>
+            <p>Code de salle: <span id="roomCode">-------</span></p>
+            <p id="waitingMessage">En attente d'un adversaire...</p>
+            <div id="playersList"></div>
+            <button id="startOnlineGameButton" class="onlineButton" disabled>Démarrer la partie</button>
+            <button id="leaveRoomButton" class="onlineButton">Quitter la salle</button>
+        </div>
+        <button id="backToMenuButton" class="gameButton">Retour au menu</button>
+    </div>
+    
+    <!-- Ajouter un bouton pour le mode en ligne dans le splashScreen -->
+    <div id="splashScreen">
+        <div id="gameTitle">ULTRA COMBAT 2D</div>
+        <div id="menuButtons">
+            <button id="startButton">MODE LOCAL</button>
+            <button id="onlineButton">MODE EN LIGNE</button>
+        </div>
+    </div>
 
 
+    <script>
+        // Sélection des éléments du DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const player1HealthEl = document.getElementById('player1Health');
+        const player2HealthEl = document.getElementById('player2Health');
+        const timerEl = document.getElementById('timer');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameResultEl = document.getElementById('gameResult');
+        const splashScreen = document.getElementById('splashScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const menuButton = document.getElementById('menuButton');
+        const comboIndicator1 = document.getElementById('comboIndicator1');
+        const comboIndicator2 = document.getElementById('comboIndicator2');
+        const powerupIndicator1 = document.getElementById('powerup1');
+        const powerupIndicator2 = document.getElementById('powerup2');
+        const fpsCounter = document.getElementById('fpsCounter');
+        
+        // Stats éléments
+        const player1HitsEl = document.getElementById('player1Hits');
+        const player1DamageEl = document.getElementById('player1Damage');
+        const player1CombosEl = document.getElementById('player1Combos');
+        const player2HitsEl = document.getElementById('player2Hits');
+        const player2DamageEl = document.getElementById('player2Damage');
+        const player2CombosEl = document.getElementById('player2Combos');
+        
+        // Variables globales
+        let lastTime = 0;
+        let gameTime = 90;
+        let gameActive = false;
+        let gameOver = false;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let fps = 60;
+        
+        // Configuration
+        const GRAVITY = 0.7;
+        const GROUND_HEIGHT = 50;
+        const COMBO_TIMEOUT = 1000;
+        const POWERUP_TYPES = ['speed', 'strength', 'shield'];
+        const POWERUP_DURATION = 7000;
+        
+        // Création des joueurs
+        const player1 = {
+            x: 150,
+            y: 300,
+            width: 60,
+            height: 120,
+            color: '#ff4b2b',
+            velocityX: 0,
+            velocityY: 0,
+            speed: 8,
+            jumpForce: 16,
+            health: 100,
+            facing: 'right',
+            isAttacking: false,
+            attackCooldown: 0,
+            attackDamage: 10,
+            specialAttackDamage: 25,
+            specialAttackCooldown: 0,
+            isBlocking: false,
+            comboCount: 0,
+            lastAttackTime: 0,
+            totalHits: 0,
+            totalDamage: 0,
+            totalCombos: 0,
+            jumpCount: 0,
+            maxJumps: 2,
+            hasPowerup: false,
+            powerupType: null,
+            powerupEndTime: 0
+        };
+        
+        const player2 = {
+            x: canvas.width - 210,
+            y: 300,
+            width: 60,
+            height: 120,
+            color: '#4169e1',
+            velocityX: 0,
+            velocityY: 0,
+            speed: 8,
+            jumpForce: 16,
+            health: 100,
+            facing: 'left',
+            isAttacking: false,
+            attackCooldown: 0,
+            attackDamage: 10,
+            specialAttackDamage: 25,
+            specialAttackCooldown: 0,
+            isBlocking: false,
+            comboCount: 0,
+            lastAttackTime: 0,
+            totalHits: 0,
+            totalDamage: 0,
+            totalCombos: 0,
+            jumpCount: 0,
+            maxJumps: 2,
+            hasPowerup: false,
+            powerupType: null,
+            powerupEndTime: 0
+        };
+        
+        // Powerups
+        const powerups = [];
+        
+        // États des touches
+        const keys = {
+            q: { pressed: false },
+            d: { pressed: false },
+            z: { pressed: false },
+            e: { pressed: false },
+            a: { pressed: false },
+            ArrowLeft: { pressed: false },
+            ArrowRight: { pressed: false },
+            ArrowUp: { pressed: false },
+            ArrowDown: { pressed: false },
+            m: { pressed: false }
+        };
+        
+        // Fonction de dessin
+        function drawGame() {
+            // Effacer le canvas
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dessiner le sol
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, GROUND_HEIGHT);
+            
+            // Dessiner les powerups
+            powerups.forEach(powerup => {
+                ctx.fillStyle = powerup.color;
+                ctx.beginPath();
+                ctx.arc(powerup.x, powerup.y, powerup.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ajouter une lueur
+                ctx.shadowColor = powerup.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(powerup.x, powerup.y, powerup.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+            
+            // Dessiner les joueurs
+            drawPlayer(player1);
+            drawPlayer(player2);
+            
+            // Dessiner les zones d'attaque si en attaque
+            if (player1.isAttacking) {
+                const attackX = player1.facing === 'right' ? player1.x + player1.width : player1.x - 80;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                ctx.fillRect(attackX, player1.y + 20, 80, 80);
+            }
+            
+            if (player2.isAttacking) {
+                const attackX = player2.facing === 'right' ? player2.x + player2.width : player2.x - 80;
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+                ctx.fillRect(attackX, player2.y + 20, 80, 80);
+            }
+        }
+        
+        function drawPlayer(player) {
+            ctx.fillStyle = player.color;
+            
+            // Appliquer des effets visuels pour les powerups
+            if (player.hasPowerup) {
+                switch (player.powerupType) {
+                    case 'speed':
+                        ctx.shadowColor = '#00ff00';
+                        break;
+                    case 'strength':
+                        ctx.shadowColor = '#ff0000';
+                        break;
+                    case 'shield':
+                        ctx.shadowColor = '#0000ff';
+                        break;
+                }
+                ctx.shadowBlur = 10;
+            }
+            
+            // Corps principal
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Tête
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2, player.y - 15, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Yeux
+            ctx.fillStyle = '#fff';
+            if (player.facing === 'right') {
+                ctx.fillRect(player.x + player.width/2 + 8, player.y - 20, 8, 12);
+            } else {
+                ctx.fillRect(player.x + player.width/2 - 16, player.y - 20, 8, 12);
+            }
+            
+            // Réinitialiser les effets d'ombre
+            ctx.shadowBlur = 0;
+        }
+        
+        // Fonctions de mise à jour
+        function updatePlayer(player, dt) {
+            // Mise à jour de la position
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            // Appliquer la gravité
+            if (player.y + player.height < canvas.height - GROUND_HEIGHT) {
+                player.velocityY += GRAVITY;
+            } else {
+                player.velocityY = 0;
+                player.y = canvas.height - GROUND_HEIGHT - player.height;
+                player.jumpCount = 0;
+            }
+            
+            // Limites du canvas
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            
+            // Gestion des cooldowns
+            if (player.attackCooldown > 0) player.attackCooldown -= dt;
+            if (player.specialAttackCooldown > 0) player.specialAttackCooldown -= dt;
+            
+            // Vérification des powerups
+            if (player.hasPowerup && Date.now() > player.powerupEndTime) {
+                player.hasPowerup = false;
+                player.powerupType = null;
+                
+                // Réinitialiser les effets des powerups
+                player.speed = 8;
+                player.attackDamage = 10;
+                player.specialAttackDamage = 25;
+                
+                // Masquer l'indicateur de powerup
+                if (player === player1) {
+                    powerupIndicator1.style.opacity = 0;
+                } else {
+                    powerupIndicator2.style.opacity = 0;
+                }
+            }
+            
+            // Vérifier les combos
+            if (player.comboCount > 0 && Date.now() - player.lastAttackTime > COMBO_TIMEOUT) {
+                player.comboCount = 0;
+            }
+        }
+        
+        function checkCollisions() {
+            // Collision entre attaques et joueurs
+            if (player1.isAttacking) {
+                const attackBox = {
+                    x: player1.facing === 'right' ? player1.x + player1.width : player1.x - 80,
+                    y: player1.y + 20,
+                    width: 80,
+                    height: 80
+                };
+                
+                if (
+                    attackBox.x < player2.x + player2.width &&
+                    attackBox.x + attackBox.width > player2.x &&
+                    attackBox.y < player2.y + player2.height &&
+                    attackBox.y + attackBox.height > player2.y &&
+                    !player2.isBlocking
+                ) {
+                    const damage = player1.hasPowerup && player1.powerupType === 'strength' 
+                        ? player1.attackDamage * 1.5 
+                        : player1.attackDamage;
+                        
+                    player2.health -= damage;
+                    player1.totalHits++;
+                    player1.totalDamage += damage;
+                    player1.comboCount++;
+                    player1.lastAttackTime = Date.now();
+                    
+                    // Gérer les combos
+                    if (player1.comboCount >= 3) {
+                        player1.totalCombos++;
+                        showComboEffect(player1);
+                    }
+                    
+                    player1.isAttacking = false;
+                    updateHealthBars();
+                }
+            }
+            
+            if (player2.isAttacking) {
+                const attackBox = {
+                    x: player2.facing === 'right' ? player2.x + player2.width : player2.x - 80,
+                    y: player2.y + 20,
+                    width: 80,
+                    height: 80
+                };
+                
+                if (
+                    attackBox.x < player1.x + player1.width &&
+                    attackBox.x + attackBox.width > player1.x &&
+                    attackBox.y < player1.y + player1.height &&
+                    attackBox.y + attackBox.height > player1.y &&
+                    !player1.isBlocking
+                ) {
+                    const damage = player2.hasPowerup && player2.powerupType === 'strength' 
+                        ? player2.attackDamage * 1.5 
+                        : player2.attackDamage;
+                        
+                    player1.health -= damage;
+                    player2.totalHits++;
+                    player2.totalDamage += damage;
+                    player2.comboCount++;
+                    player2.lastAttackTime = Date.now();
+                    
+                    // Gérer les combos
+                    if (player2.comboCount >= 3) {
+                        player2.totalCombos++;
+                        showComboEffect(player2);
+                    }
+                    
+                    player2.isAttacking = false;
+                    updateHealthBars();
+                }
+            }
+            
+            // Collision avec les powerups
+            powerups.forEach((powerup, index) => {
+                // Vérifier collision avec joueur 1
+                if (
+                    player1.x < powerup.x + powerup.radius*2 &&
+                    player1.x + player1.width > powerup.x - powerup.radius &&
+                    player1.y < powerup.y + powerup.radius*2 &&
+                    player1.y + player1.height > powerup.y - powerup.radius
+                ) {
+                    applyPowerup(player1, powerup.type);
+                    powerups.splice(index, 1);
+                }
+                
+                // Vérifier collision avec joueur 2
+                else if (
+                    player2.x < powerup.x + powerup.radius*2 &&
+                    player2.x + player2.width > powerup.x - powerup.radius &&
+                    player2.y < powerup.y + powerup.radius*2 &&
+                    player2.y + player2.height > powerup.y - powerup.radius
+                ) {
+                    applyPowerup(player2, powerup.type);
+                    powerups.splice(index, 1);
+                }
+            });
+        }
+        
+        function updateHealthBars() {
+            // Limiter la santé à 0 minimum
+            if (player1.health < 0) player1.health = 0;
+            if (player2.health < 0) player2.health = 0;
+            
+            // Mettre à jour les barres de vie
+            player1HealthEl.style.width = `${player1.health}%`;
+            player2HealthEl.style.width = `${player2.health}%`;
+            
+            // Mettre à jour le texte de la santé
+            player1HealthEl.parentElement.querySelector('.healthText').textContent = `${Math.ceil(player1.health)}/100`;
+            player2HealthEl.parentElement.querySelector('.healthText').textContent = `${Math.ceil(player2.health)}/100`;
+            
+            // Vérifier la fin du jeu
+            if (player1.health <= 0 || player2.health <= 0 || gameTime <= 0) {
+                endGame();
+            }
+        }
+        
+        function showComboEffect(player) {
+            const indicator = player === player1 ? comboIndicator1 : comboIndicator2;
+            indicator.textContent = `COMBO x${player.comboCount}!`;
+            indicator.style.opacity = 1;
+            indicator.style.transform = 'translateY(-20px)';
+            
+            // Positionner l'indicateur au-dessus du joueur
+            indicator.style.left = `${player.x}px`;
+            indicator.style.top = `${player.y - 50}px`;
+            
+            // Faire disparaître progressivement
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+                indicator.style.transform = 'translateY(-40px)';
+            }, 1000);
+        }
+        
+        function spawnPowerup() {
+            if (powerups.length >= 2 || !gameActive) return;
+            
+            const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+            let color;
+            
+            switch (type) {
+                case 'speed':
+                    color = '#00ff00';
+                    break;
+                case 'strength':
+                    color = '#ff0000';
+                    break;
+                case 'shield':
+                    color = '#0000ff';
+                    break;
+            }
+            
+            powerups.push({
+                x: Math.random() * (canvas.width - 100) + 50,
+                y: Math.random() * 200 + 100,
+                radius: 15,
+                type: type,
+                color: color
+            });
+            
+            // Programmer le prochain powerup
+            setTimeout(spawnPowerup, Math.random() * 10000 + 5000);
+        }
+        
+        function applyPowerup(player, type) {
+            player.hasPowerup = true;
+            player.powerupType = type;
+            player.powerupEndTime = Date.now() + POWERUP_DURATION;
+            
+            const indicator = player === player1 ? powerupIndicator1 : powerupIndicator2;
+            
+            switch (type) {
+                case 'speed':
+                    player.speed = 12;
+                    indicator.textContent = "VITESSE +50%";
+                    indicator.style.color = "#00ff00";
+                    break;
+                case 'strength':
+                    indicator.textContent = "FORCE +50%";
+                    indicator.style.color = "#ff0000";
+                    break;
+                case 'shield':
+                    // Récupérer de la santé
+                    player.health = Math.min(100, player.health + 30);
+                    updateHealthBars();
+                    indicator.textContent = "BOUCLIER +30 PV";
+                    indicator.style.color = "#0000ff";
+                    break;
+            }
+            
+            // Afficher l'indicateur
+            indicator.style.opacity = 1;
+            
+            // Programmer la fin de l'affichage
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+            }, 3000);
+        }
+        
+        // Gestion des inputs
+        function handleInput() {
+            // Joueur 1
+            player1.velocityX = 0;
+            
+            if (keys.q.pressed) {
+                player1.velocityX = -player1.speed;
+                player1.facing = 'left';
+            }
+            
+            if (keys.d.pressed) {
+                player1.velocityX = player1.speed;
+                player1.facing = 'right';
+            }
+            
+            // Joueur 2
+            player2.velocityX = 0;
+            
+            if (keys.ArrowLeft.pressed) {
+                player2.velocityX = -player2.speed;
+                player2.facing = 'left';
+            }
+            
+            if (keys.ArrowRight.pressed) {
+                player2.velocityX = player2.speed;
+                player2.facing = 'right';
+            }
+        }
+        
+        // Boucle de jeu
+        function gameLoop(timestamp) {
+            // Calculer le delta temps
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // Calculer les FPS
+            frameCount++;
+            if (timestamp - lastFpsUpdate > 1000) {
+                fps = Math.round((frameCount * 1000) / (timestamp - lastFpsUpdate));
+                fpsCounter.textContent = `FPS: ${fps}`;
+                frameCount = 0;
+                lastFpsUpdate = timestamp;
+            }
+            
+            if (gameActive && !gameOver) {
+                handleInput();
+                updatePlayer(player1, dt);
+                updatePlayer(player2, dt);
+                checkCollisions();
+                drawGame();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Gestion du chronomètre
+        function updateTimer() {
+            if (gameActive && !gameOver && gameTime > 0) {
+                gameTime--;
+                timerEl.textContent = gameTime;
+                
+                if (gameTime <= 10) {
+                    timerEl.style.color = '#ff0000';
+                }
+            }
+        }
+        
+        // Fin de jeu
+        function endGame() {
+            gameActive = false;
+            gameOver = true;
+            
+            // Afficher les statistiques
+            player1HitsEl.textContent = player1.totalHits;
+            player1DamageEl.textContent = Math.round(player1.totalDamage);
+            player1CombosEl.textContent = player1.totalCombos;
+            
+            player2HitsEl.textContent = player2.totalHits;
+            player2DamageEl.textContent = Math.round(player2.totalDamage);
+            player2CombosEl.textContent = player2.totalCombos;
+            
+            // Déterminer le vainqueur
+            let result = '';
+            
+            if (player1.health <= 0) {
+                result = 'JOUEUR 2 GAGNE!';
+            } else if (player2.health <= 0) {
+                result = 'JOUEUR 1 GAGNE!';
+            } else if (player1.health > player2.health) {
+                result = 'JOUEUR 1 GAGNE PAR POINTS!';
+            } else if (player2.health > player1.health) {
+                result = 'JOUEUR 2 GAGNE PAR POINTS!';
+            } else {
+                result = 'MATCH NUL!';
+            }
+            
+            gameResultEl.textContent = result;
+            
+            // Afficher l'écran de fin
+            setTimeout(() => {
+                gameOverScreen.style.display = 'flex';
+            }, 1000);
+        }
+        
+        // Fonction de réinitialisation
+        function resetGame() {
+            // Réinitialiser les joueurs
+            player1.x = 150;
+            player1.y = 300;
+            player1.velocityX = 0;
+            player1.velocityY = 0;
+            player1.health = 100;
+            player1.comboCount = 0;
+            player1.totalHits = 0;
+            player1.totalDamage = 0;
+            player1.totalCombos = 0;
+            player1.hasPowerup = false;
+            
+            player2.x = canvas.width - 210;
+            player2.y = 300;
+            player2.velocityX = 0;
+            player2.velocityY = 0;
+            player2.health = 100;
+            player2.comboCount = 0;
+            player2.totalHits = 0;
+            player2.totalDamage = 0;
+            player2.totalCombos = 0;
+            player2.hasPowerup = false;
+            
+            // Réinitialiser le jeu
+            gameTime = 90;
+            timerEl.textContent = gameTime;
+            timerEl.style.color = '#ffcc00';
+            gameActive = true;
+            gameOver = false;
+            
+            // Vider les powerups
+            powerups.length = 0;
+            
+            // Mettre à jour les barres de vie
+            updateHealthBars();
+            
+            // Cacher l'écran de fin
+            gameOverScreen.style.display = 'none';
+            
+            // Programmer l'apparition du premier powerup
+            setTimeout(spawnPowerup, 5000);
+        }
+        
+        // Événements
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            
+            if (e.key in keys) {
+                keys[e.key].pressed = true;
+            }
+            
+            // Sauts
+            if (e.key === 'z' && player1.jumpCount < player1.maxJumps) {
+                player1.velocityY = -player1.jumpForce;
+                player1.jumpCount++;
+            }
+            
+            if (e.key === 'ArrowUp' && player2.jumpCount < player2.maxJumps) {
+                player2.velocityY = -player2.jumpForce;
+                player2.jumpCount++;
+            }
+            
+            // Attaques
+            if (e.key === 'e' && player1.attackCooldown <= 0) {
+                player1.isAttacking = true;
+                player1.attackCooldown = 300;
+                
+                setTimeout(() => {
+                    player1.isAttacking = false;
+                }, 100);
+            }
+            
+            if (e.key === 'ArrowDown' && player2.attackCooldown <= 0) {
+                player2.isAttacking = true;
+                player2.attackCooldown = 300;
+                
+                setTimeout(() => {
+                    player2.isAttacking = false;
+                }, 100);
+            }
+            
+            // Attaques spéciales
+            if (e.key === 'a' && player1.specialAttackCooldown <= 0) {
+                player1.isAttacking = true;
+                const damage = player1.specialAttackDamage;
+                player1.specialAttackCooldown = 8000;
+                
+                // Effet visuel pour l'attaque spéciale
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                const attackX = player1.facing === 'right' ? player1.x + player1.width : player1.x - 120;
+                ctx.fillRect(attackX, player1.y - 20, 120, 160);
+                
+                // Vérifier si l'attaque touche
+                if (
+                    (player1.facing === 'right' && player2.x > player1.x && player2.x < player1.x + 200) ||
+                    (player1.facing === 'left' && player2.x < player1.x && player2.x > player1.x - 200)
+                ) {
+                    player2.health -= damage;
+                    player1.totalHits++;
+                    player1.totalDamage += damage;
+                    updateHealthBars();
+                }
+                
+                setTimeout(() => {
+                    player1.isAttacking = false;
+                }, 200);
+            }
+            
+            if (e.key === 'm' && player2.specialAttackCooldown <= 0) {
+                player2.isAttacking = true;
+                const damage = player2.specialAttackDamage;
+                player2.specialAttackCooldown = 8000;
+                
+                // Effet visuel pour l'attaque spéciale
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+                const attackX = player2.facing === 'right' ? player2.x + player2.width : player2.x - 120;
+                ctx.fillRect(attackX, player2.y - 20, 120, 160);
+                
+                // Vérifier si l'attaque touche
+                if (
+                    (player2.facing === 'right' && player1.x > player2.x && player1.x < player2.x + 200) ||
+                    (player2.facing === 'left' && player1.x < player2.x && player1.x > player2.x - 200)
+                ) {
+                    player1.health -= damage;
+                    player2.totalHits++;
+                    player2.totalDamage += damage;
+                    updateHealthBars();
+                }
+                
+                setTimeout(() => {
+                    player2.isAttacking = false;
+                }, 200);
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if (e.key in keys) {
+                keys[e.key].pressed = false;
+            }
+        });
+        
+        // Événements des boutons
+        startButton.addEventListener('click', () => {
+            splashScreen.style.display = 'none';
+            resetGame();
+            // Démarrer le chronomètre
+            timerInterval = setInterval(updateTimer, 1000);
+        });
+        
+        restartButton.addEventListener('click', () => {
+            resetGame();
+        });
+        
+        menuButton.addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            splashScreen.style.display = 'flex';
+        });
+        
+        // Initialiser le système de particules
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '2px';
+                particle.style.height = '2px';
+                particle.style.background = 'rgba(255, 255, 255, 0.5)';
+                particle.style.borderRadius = '50%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animation = `float ${Math.random() * 5 + 10}s linear infinite`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Démarrer le jeu
+        window.onload = function() {
+            initParticles();
+            requestAnimationFrame(gameLoop);
+        };
+
+
+        // Variables pour le mode en ligne
+let socket;
+let isOnlineMode = false;
+let roomCreated = false;
+let isHost = false;
+let currentRoomId = '';
+let playerId = '';
+let playerName = '';
+let timerInterval;
+let opponentData = {};
+let lastUpdateTime = 0;
+let ping = 0;
+let lastPingSent = 0;
+
+// Sélectionner les nouveaux éléments DOM
+const onlineScreen = document.getElementById('onlineScreen');
+const onlineButton = document.getElementById('onlineButton');
+const backToMenuButton = document.getElementById('backToMenuButton');
+const createRoomButton = document.getElementById('createRoomButton');
+const joinRoomButton = document.getElementById('joinRoomButton');
+const playerNameInput = document.getElementById('playerName');
+const roomIdInput = document.getElementById('roomId');
+const waitingRoom = document.getElementById('waitingRoom');
+const roomCodeSpan = document.getElementById('roomCode');
+const playersList = document.getElementById('playersList');
+const waitingMessage = document.getElementById('waitingMessage');
+const startOnlineGameButton = document.getElementById('startOnlineGameButton');
+const leaveRoomButton = document.getElementById('leaveRoomButton');
+const connectionControls = document.getElementById('connectionControls');
+
+// Créer un élément pour l'indicateur de ping
+const pingIndicator = document.createElement('div');
+pingIndicator.id = 'pingIndicator';
+pingIndicator.textContent = 'Ping: 0ms';
+document.body.appendChild(pingIndicator);
+
+// Initialiser la connexion Socket.io
+function initializeSocketConnection() {
+    // Remplacez l'URL par votre serveur Socket.io
+    socket = io('https://votre-serveur-socketio.com');
+    
+    socket.on('connect', () => {
+        console.log('Connecté au serveur');
+        playerId = socket.id;
+        // Envoyer un ping régulier pour mesurer la latence
+        setInterval(sendPing, 2000);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Déconnecté du serveur');
+        if (isOnlineMode) {
+            alert('Connexion au serveur perdue!');
+            returnToMainMenu();
+        }
+    });
+    
+    // Gestion des événements de salle
+    socket.on('roomCreated', (data) => {
+        console.log('Salle créée:', data);
+        currentRoomId = data.roomId;
+        roomCodeSpan.textContent = currentRoomId;
+        roomCreated = true;
+        isHost = true;
+        
+        switchToWaitingRoom();
+        updatePlayersList(data.players);
+    });
+    
+    socket.on('roomJoined', (data) => {
+        console.log('Salle rejointe:', data);
+        currentRoomId = data.roomId;
+        roomCodeSpan.textContent = currentRoomId;
+        roomCreated = true;
+        isHost = false;
+        
+        switchToWaitingRoom();
+        updatePlayersList(data.players);
+    });
+    
+    socket.on('playerJoined', (data) => {
+        console.log('Joueur rejoint:', data);
+        updatePlayersList(data.players);
+        
+        // Activer le bouton de démarrage si le joueur est l'hôte et qu'il y a au moins 2 joueurs
+        if (isHost && data.players.length >= 2) {
+            startOnlineGameButton.disabled = false;
+        }
+    });
+    
+    socket.on('playerLeft', (data) => {
+        console.log('Joueur parti:', data);
+        updatePlayersList(data.players);
+        
+        // Désactiver le bouton de démarrage s'il n'y a pas assez de joueurs
+        if (isHost && data.players.length < 2) {
+            startOnlineGameButton.disabled = true;
+        }
+    });
+    
+    socket.on('gameStarted', () => {
+        console.log('La partie commence!');
+        startOnlineGame();
+    });
+    
+    socket.on('errorMessage', (data) => {
+        alert(data.message);
+    });
+    
+    // Mise à jour des positions et actions des joueurs
+    socket.on('gameUpdate', (data) => {
+        if (!isOnlineMode || !gameActive) return;
+        
+        // Mettre à jour les données de l'adversaire
+        opponentData = data.playerData;
+        
+        // Si le joueur est l'hôte, il contrôle le joueur 1, sinon le joueur 2
+        if (!isHost) {
+            // Mettre à jour le joueur 1 (adversaire)
+            player1.x = opponentData.x;
+            player1.y = opponentData.y;
+            player1.velocityX = opponentData.velocityX;
+            player1.velocityY = opponentData.velocityY;
+            player1.health = opponentData.health;
+            player1.facing = opponentData.facing;
+            player1.isAttacking = opponentData.isAttacking;
+        } else {
+            // Mettre à jour le joueur 2 (adversaire)
+            player2.x = opponentData.x;
+            player2.y = opponentData.y;
+            player2.velocityX = opponentData.velocityX;
+            player2.velocityY = opponentData.velocityY;
+            player2.health = opponentData.health;
+            player2.facing = opponentData.facing;
+            player2.isAttacking = opponentData.isAttacking;
+        }
+        
+        // Mettre à jour les barres de vie
+        updateHealthBars();
+    });
+    
+    // Mise à jour du temps
+    socket.on('timeUpdate', (data) => {
+        if (!isOnlineMode || !gameActive) return;
+        
+        gameTime = data.time;
+        timerEl.textContent = gameTime;
+        
+        if (gameTime <= 10) {
+            timerEl.style.color = '#ff0000';
+        }
+    });
+    
+    // Événement de fin de partie
+    socket.on('gameOver', (data) => {
+        if (!isOnlineMode) return;
+        
+        endGame();
+    });
+    
+    // Mesure du ping
+    socket.on('pong', () => {
+        ping = Date.now() - lastPingSent;
+        pingIndicator.textContent = `Ping: ${ping}ms`;
+    });
+}
+
+// Fonctions pour le mode en ligne
+function createRoom() {
+    playerName = playerNameInput.value.trim();
+    if (!playerName) {
+        alert('Veuillez entrer votre nom!');
+        return;
+    }
+    
+    socket.emit('createRoom', { playerName });
+}
+
+function joinRoom() {
+    playerName = playerNameInput.value.trim();
+    const roomId = roomIdInput.value.trim();
+    
+    if (!playerName) {
+        alert('Veuillez entrer votre nom!');
+        return;
+    }
+    
+    if (!roomId) {
+        alert('Veuillez entrer un code de salle!');
+        return;
+    }
+    
+    socket.emit('joinRoom', { playerName, roomId });
+}
+
+function leaveRoom() {
+    socket.emit('leaveRoom', { roomId: currentRoomId });
+    roomCreated = false;
+    currentRoomId = '';
+    isHost = false;
+    
+    // Revenir à l'écran de connexion
+    waitingRoom.style.display = 'none';
+    connectionControls.style.display = 'flex';
+}
+
+function switchToWaitingRoom() {
+    connectionControls.style.display = 'none';
+    waitingRoom.style.display = 'flex';
+}
+
+function updatePlayersList(players) {
+    playersList.innerHTML = '';
+    
+    players.forEach(player => {
+        const playerElement = document.createElement('div');
+        playerElement.className = 'player';
+        playerElement.textContent = player.name;
+        
+        if (player.id === playerId) {
+            playerElement.classList.add('self');
+        }
+        
+        if (player.isHost) {
+            playerElement.classList.add('host');
+        }
+        
+        playersList.appendChild(playerElement);
+    });
+    
+    // Mettre à jour le message d'attente
+    if (players.length < 2) {
+        waitingMessage.textContent = "En attente d'un adversaire...";
+    } else {
+        waitingMessage.textContent = "Prêt à jouer!";
+    }
+}
+
+function startOnlineGame() {
+    isOnlineMode = true;
+    onlineScreen.style.display = 'none';
+    pingIndicator.style.display = 'block';
+    
+    // Réinitialiser le jeu
+    resetGame();
+    
+    // Si la partie est en ligne et que le joueur est l'hôte, commencer à envoyer des mises à jour de temps
+    if (isHost) {
+        timerInterval = setInterval(() => {
+            if (gameActive && !gameOver && gameTime > 0) {
+                gameTime--;
+                timerEl.textContent = gameTime;
+                
+                if (gameTime <= 10) {
+                    timerEl.style.color = '#ff0000';
+                }
+                
+                // Envoyer la mise à jour du temps
+                socket.emit('updateTime', { 
+                    roomId: currentRoomId,
+                    time: gameTime 
+                });
+                
+                // Vérifier la fin du jeu
+                if (gameTime <= 0) {
+                    endGame();
+                }
+            }
+        }, 1000);
+    }
+}
+
+function sendGameUpdate() {
+    if (!isOnlineMode || !gameActive) return;
+    
+    // Limiter le nombre de mises à jour par seconde
+    const now = Date.now();
+    if (now - lastUpdateTime < 50) return; // Environ 20 mises à jour par seconde
+    
+    lastUpdateTime = now;
+    
+    // Préparer les données du joueur à envoyer
+    const playerData = isHost ? {
+        x: player1.x,
+        y: player1.y,
+        velocityX: player1.velocityX,
+        velocityY: player1.velocityY,
+        health: player1.health,
+        facing: player1.facing,
+        isAttacking: player1.isAttacking
+    } : {
+        x: player2.x,
+        y: player2.y,
+        velocityX: player2.velocityX,
+        velocityY: player2.velocityY,
+        health: player2.health,
+        facing: player2.facing,
+        isAttacking: player2.isAttacking
+    };
+    
+    // Envoyer les données au serveur
+    socket.emit('updateGame', {
+        roomId: currentRoomId,
+        playerData: playerData
+    });
+}
+
+function sendPing() {
+    if (!socket.connected) return;
+    
+    lastPingSent = Date.now();
+    socket.emit('ping');
+}
+
+// Modification de la fonction gameLoop pour le mode en ligne
+function gameLoop(timestamp) {
+    // Calculer le delta temps
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+    
+    // Calculer les FPS
+    frameCount++;
+    if (timestamp - lastFpsUpdate > 1000) {
+        fps = Math.round((frameCount * 1000) / (timestamp - lastFpsUpdate));
+        fpsCounter.textContent = `FPS: ${fps}`;
+        frameCount = 0;
+        lastFpsUpdate = timestamp;
+    }
+    
+    if (gameActive && !gameOver) {
+        handleInput();
+        
+        // En mode en ligne, chaque client ne met à jour que son propre joueur
+        if (isOnlineMode) {
+            if (isHost) {
+                updatePlayer(player1, dt);
+            } else {
+                updatePlayer(player2, dt);
+            }
+            checkCollisions();
+            drawGame();
+            
+            // Envoyer les mises à jour de position
+            sendGameUpdate();
+        } else {
+            // Mode local normal
+            updatePlayer(player1, dt);
+            updatePlayer(player2, dt);
+            checkCollisions();
+            drawGame();
+        }
+    }
+    
+    requestAnimationFrame(gameLoop);
+}
+
+// Modification de la fonction endGame pour le mode en ligne
+function endGame() {
+    gameActive = false;
+    gameOver = true;
+    
+    // Arrêter l'intervalle du chronomètre
+    clearInterval(timerInterval);
+    
+    // Afficher les statistiques
+    player1HitsEl.textContent = player1.totalHits;
+    player1DamageEl.textContent = Math.round(player1.totalDamage);
+    player1CombosEl.textContent = player1.totalCombos;
+    
+    player2HitsEl.textContent = player2.totalHits;
+    player2DamageEl.textContent = Math.round(player2.totalDamage);
+    player2CombosEl.textContent = player2.totalCombos;
+    
+    // Déterminer le vainqueur
+    let result = '';
+    
+    if (player1.health <= 0) {
+        result = 'JOUEUR 2 GAGNE!';
+    } else if (player2.health <= 0) {
+        result = 'JOUEUR 1 GAGNE!';
+    } else if (player1.health > player2.health) {
+        result = 'JOUEUR 1 GAGNE PAR POINTS!';
+    } else if (player2.health > player1.health) {
+        result = 'JOUEUR 2 GAGNE PAR POINTS!';
+    } else {
+        result = 'MATCH NUL!';
+    }
+    
+    gameResultEl.textContent = result;
+    
+    // Afficher l'écran de fin
+    setTimeout(() => {
+        gameOverScreen.style.display = 'flex';
+        
+        // En mode en ligne, notifier le serveur de la fin du jeu
+        if (isOnlineMode && isHost) {
+            socket.emit('gameOver', { roomId: currentRoomId });
+        }
+        
+        // Masquer l'indicateur de ping
+        pingIndicator.style.display = 'none';
+    }, 1000);
+}
+
+function returnToMainMenu() {
+    // Réinitialiser les variables du mode en ligne
+    isOnlineMode = false;
+    roomCreated = false;
+    currentRoomId = '';
+    isHost = false;
+    
+    // Masquer l'indicateur de ping
+    pingIndicator.style.display = 'none';
+    
+    // Afficher l'écran principal
+    gameOverScreen.style.display = 'none';
+    onlineScreen.style.display = 'none';
+    waitingRoom.style.display = 'none';
+    connectionControls.style.display = 'flex';
+    splashScreen.style.display = 'flex';
+}
+
+// Ajout des événements pour le mode en ligne
+onlineButton.addEventListener('click', () => {
+    splashScreen.style.display = 'none';
+    onlineScreen.style.display = 'flex';
+    
+    // Initialiser la connexion Socket.io si ce n'est pas déjà fait
+    if (!socket) {
+        initializeSocketConnection();
+    }
+});
+
+backToMenuButton.addEventListener('click', () => {
+    onlineScreen.style.display = 'none';
+    splashScreen.style.display = 'flex';
+});
+
+createRoomButton.addEventListener('click', createRoom);
+joinRoomButton.addEventListener('click', joinRoom);
+leaveRoomButton.addEventListener('click', leaveRoom);
+
+startOnlineGameButton.addEventListener('click', () => {
+    if (isHost) {
+        socket.emit('startGame', { roomId: currentRoomId });
+    }
+});
+
+// Modifier le bouton de menu pour gérer le mode en ligne
+menuButton.addEventListener('click', () => {
+    if (isOnlineMode) {
+        // Se déconnecter de la salle
+        socket.emit('leaveRoom', { roomId: currentRoomId });
+    }
+    
+    returnToMainMenu();
+});
+
+// Modifier le conteneur de boutons du splashScreen
+const menuButtons = document.createElement('div');
+menuButtons.id = 'menuButtons';
+splashScreen.appendChild(menuButtons);
+
+// Déplacer les boutons dans le conteneur
+menuButtons.appendChild(startButton);
+menuButtons.appendChild(onlineButton);
+
+        </script>
 </body>
 </html>
