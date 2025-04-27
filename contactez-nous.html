@@ -1,675 +1,1560 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق غرف الدردشة بقاعدة بيانات محلية</title>
+    <title>ChatConnect - Application de messagerie professionnelle</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f2f5;
+        :root {
+            --primary-color: #4a76fd;
+            --secondary-color: #f0f2f5;
+            --text-color: #333;
+            --light-text: #888;
+            --border-color: #ddd;
+            --sent-message: #e1f5fe;
+            --received-message: #f5f5f5;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fafafa;
+            color: var(--text-color);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
             height: 100vh;
-            direction: rtl;
-        }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
-            padding: 20px;
-        }
-        h1 {
-            color: #1877f2;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .tabs {
+            max-height: 800px;
             display: flex;
-            margin-bottom: 20px;
+            overflow: hidden;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
         }
-        .tab {
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            height: 100%;
+            background-color: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .app-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .room-list {
             flex: 1;
-            padding: 10px;
-            text-align: center;
-            background-color: #e4e6eb;
-            cursor: pointer;
-        }
-        .tab.active {
-            background-color: #1877f2;
-            color: white;
-        }
-        .tab:first-child {
-            border-radius: 0 5px 5px 0;
-        }
-        .tab:last-child {
-            border-radius: 5px 0 0 5px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #1877f2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #166fe5;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        #chat-area {
-            display: none;
-        }
-        .chat-container {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            height: 300px;
-            padding: 10px;
             overflow-y: auto;
-            margin-bottom: 15px;
-            background-color: #f9f9f9;
+            padding: 10px;
         }
-        .message {
+
+        .room-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .room-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .room-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .room-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .room-info {
+            flex: 1;
+        }
+
+        .room-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .room-last-message {
+            font-size: 0.85rem;
+            color: var(--light-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-button {
+            margin-right: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .chat-header-info {
+            flex: 1;
+        }
+
+        .chat-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .chat-subtitle {
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        .chat-header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-icon {
+            margin-left: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--light-text);
+            transition: color 0.2s;
+        }
+
+        .header-icon:hover {
+            color: var(--primary-color);
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-wrapper {
             margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
             max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .message-sent {
+            align-self: flex-end;
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-received {
+            align-self: flex-start;
+            background-color: white;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-content {
+            margin-bottom: 5px;
             word-wrap: break-word;
         }
-        .message.sent {
-            background-color: #1877f2;
-            color: white;
-            margin-left: auto;
-        }
-        .message.received {
-            background-color: #e4e6eb;
-            margin-right: auto;
-        }
-        .message-input {
+
+        .message-meta {
+            font-size: 0.7rem;
+            opacity: 0.7;
             display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .message-input input {
-            flex: 1;
-            margin-left: 10px;
-        }
-        .message-input button {
-            width: auto;
-            padding: 10px 20px;
-        }
-        .room-code {
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1877f2;
-        }
-        .user-list {
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            max-height: 100px;
-            overflow-y: auto;
-            background-color: #f9f9f9;
-        }
-        .user-item {
-            display: inline-block;
-            background-color: #e4e6eb;
-            padding: 5px 10px;
-            border-radius: 15px;
+
+        .message-time {
             margin-left: 5px;
-            margin-bottom: 5px;
-            font-size: 14px;
         }
-        .sync-data {
-            margin-top: 15px;
+
+        .message-status {
+            font-size: 0.9rem;
+        }
+
+        .system-message {
             text-align: center;
+            padding: 8px 16px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            margin: 10px auto;
+            font-size: 0.85rem;
+            color: var(--light-text);
+            max-width: 80%;
         }
-        .sync-area {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+
+        .chat-footer {
             padding: 15px;
-            margin-top: 10px;
-            display: none;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            background-color: white;
         }
-        .sync-textarea {
+
+        .message-input-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background-color: var(--secondary-color);
+            border-radius: 20px;
+            padding: 0 15px;
+        }
+
+        .input-icon {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            margin-right: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .input-icon:hover {
+            color: var(--primary-color);
+        }
+
+        #message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 12px 0;
+            background-color: transparent;
+            font-size: 1rem;
+        }
+
+        .send-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .send-button:hover {
+            background-color: #3a66fd;
+        }
+
+        .send-button:disabled {
+            background-color: var(--light-text);
+            cursor: not-allowed;
+        }
+
+        /* Login/Register Area */
+        .auth-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
             width: 100%;
-            height: 100px;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            background-color: white;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
             margin-bottom: 10px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: none;
         }
-        #share-data-btn {
-            background-color: #4caf50;
+
+        .auth-subtitle {
+            font-size: 1rem;
+            color: var(--light-text);
         }
-        #load-data-btn {
-            background-color: #2196f3;
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
         }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            color: var(--light-text);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #3a66fd;
+        }
+
+        /* User List */
+        .user-list-container {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: var(--secondary-color);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .user-name {
+            margin-right: 5px;
+        }
+
+        .current-user-indicator {
+            font-size: 0.75rem;
+            color: var(--primary-color);
+        }
+
+        /* Notification */
         .notification {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
             z-index: 1000;
-            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--light-text);
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .sync-textarea {
+            width: 100%;
+            height: 120px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            resize: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                height: 100vh;
+                max-height: none;
+                border-radius: 0;
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                left: 0;
+                top: 0;
+                z-index: 10;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .back-button {
+                display: block;
+            }
+
+            .chat-area {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="notification" id="notification"></div>
-    
-    <div class="container">
-        <h1>تطبيق غرف الدردشة</h1>
-        
-        <!-- منطقة الدخول -->
-        <div id="login-area">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('create')">إنشاء غرفة</div>
-                <div class="tab" onclick="switchTab('join')">الانضمام لغرفة</div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="app-name">ChatConnect</div>
+                <div class="header-icon" onclick="createNewRoom()">
+                    <i class="fas fa-plus"></i>
+                </div>
             </div>
-            
-            <div id="create-tab" class="tab-content active">
-                <div class="form-group">
-                    <label for="create-name">اسم المستخدم:</label>
-                    <input type="text" id="create-name" placeholder="أدخل اسمك">
-                </div>
-                <button onclick="createRoom()">إنشاء غرفة جديدة</button>
+            <div class="room-list" id="room-list">
+                <!-- Room items will be dynamically added here -->
             </div>
-            
-            <div id="join-tab" class="tab-content">
-                <div class="form-group">
-                    <label for="join-name">اسم المستخدم:</label>
-                    <input type="text" id="join-name" placeholder="أدخل اسمك">
+            <div class="sidebar-footer">
+                <div id="user-display"></div>
+                <div class="header-icon" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
                 </div>
-                <div class="form-group">
-                    <label for="room-code">رمز الغرفة:</label>
-                    <input type="text" id="room-code" placeholder="أدخل رمز الغرفة">
-                </div>
-                <button onclick="joinRoom()">الانضمام للغرفة</button>
             </div>
         </div>
-        
-        <!-- منطقة الدردشة -->
-        <div id="chat-area">
-            <div class="room-code" id="room-code-display"></div>
-            
-            <div class="user-list" id="user-list">
-                <!-- هنا سيتم عرض المستخدمين المتصلين -->
-            </div>
-            
-            <div class="chat-container" id="messages">
-                <!-- هنا سيتم عرض الرسائل -->
-            </div>
-            
-            <div class="message-input">
-                <input type="text" id="message-input" placeholder="اكتب رسالتك هنا...">
-                <button onclick="sendMessage()">إرسال</button>
-            </div>
-            
-            <div class="sync-data">
-                <button id="toggle-sync-btn" onclick="toggleSyncArea()">مزامنة البيانات بين المستخدمين</button>
-                
-                <div class="sync-area" id="sync-area">
-                    <h3>مزامنة البيانات</h3>
-                    <p>لمشاركة بيانات الدردشة، انسخ النص أدناه وارسله لأصدقائك:</p>
-                    <textarea class="sync-textarea" id="share-data" readonly></textarea>
-                    <button id="share-data-btn" onclick="copyShareData()">نسخ البيانات</button>
-                    
-                    <h3 style="margin-top: 20px;">استيراد البيانات</h3>
-                    <p>الصق بيانات الدردشة المشتركة من أصدقائك هنا:</p>
-                    <textarea class="sync-textarea" id="load-data" placeholder="الصق بيانات الدردشة هنا..."></textarea>
-                    <button id="load-data-btn" onclick="loadSharedData()">تحميل البيانات</button>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area" id="chat-area">
+            <div class="chat-header">
+                <div class="back-button" onclick="toggleSidebar()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="chat-header-info">
+                    <div class="chat-title" id="chat-title"></div>
+                    <div class="chat-subtitle" id="chat-subtitle"></div>
+                </div>
+                <div class="chat-header-actions">
+                    <div class="header-icon" onclick="showRoomInfo()">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="header-icon" onclick="showSyncModal()">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
                 </div>
             </div>
-            
-            <button onclick="leaveRoom()" style="margin-top: 10px; background-color: #dc3545;">مغادرة الغرفة</button>
+
+            <div class="user-list-container">
+                <div class="user-list" id="user-list">
+                    <!-- User chips will be dynamically added here -->
+                </div>
+            </div>
+
+            <div class="messages-container" id="messages-container">
+                <!-- Messages will be dynamically added here -->
+            </div>
+
+            <div class="chat-footer">
+                <div class="message-input-container">
+                    <div class="input-icon">
+                        <i class="far fa-smile"></i>
+                    </div>
+                    <input type="text" id="message-input" placeholder="Écrivez votre message ici..." autofocus>
+                    <div class="input-icon">
+                        <i class="fas fa-paperclip"></i>
+                    </div>
+                </div>
+                <button class="send-button" id="send-button" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Login/Register Area -->
+        <div class="auth-container" id="auth-container">
+            <div class="auth-box">
+                <div class="auth-header">
+                    <h1 class="auth-title">ChatConnect</h1>
+                    <p class="auth-subtitle">Restez connecté avec vos amis en temps réel</p>
+                </div>
+
+                <div class="tab-container">
+                    <div class="tab active" onclick="switchTab('login')">Connexion</div>
+                    <div class="tab" onclick="switchTab('register')">Inscription</div>
+                </div>
+
+                <div id="login-form">
+                    <div class="form-group">
+                        <label for="login-username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" id="login-username" class="form-control" placeholder="Entrez votre nom d'utilisateur">
+                    </div>
+                    <button class="btn btn-primary" onclick="login()">Se connecter</button>
+                </div>
+
+                <div id="register-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="register-username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" id="register-username" class="form-control" placeholder="Choisissez un nom d'utilisateur">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-fullname" class="form-label">Nom complet</label>
+                        <input type="text" id="register-fullname" class="form-control" placeholder="Entrez votre nom complet">
+                    </div>
+                    <button class="btn btn-primary" onclick="register()">S'inscrire</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Modal -->
+    <div class="overlay" id="create-room-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Créer une nouvelle conversation</h2>
+                <button class="close-button" onclick="closeModal('create-room-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="room-name" class="form-label">Nom de la conversation</label>
+                    <input type="text" id="room-name" class="form-control" placeholder="Entrez le nom de la conversation">
+                </div>
+                <div class="form-group">
+                    <label for="room-description" class="form-label">Description (optionnel)</label>
+                    <input type="text" id="room-description" class="form-control" placeholder="Décrivez brièvement cette conversation">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="confirmCreateRoom()">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Info Modal -->
+    <div class="overlay" id="room-info-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Informations sur la conversation</h2>
+                <button class="close-button" onclick="closeModal('room-info-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Code de la salle</label>
+                    <div class="form-control" id="room-code-display" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span id="room-code-text"></span>
+                        <i class="fas fa-copy" style="cursor: pointer;" onclick="copyRoomCode()"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Créée par</label>
+                    <div class="form-control" id="room-creator"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date de création</label>
+                    <div class="form-control" id="room-creation-date"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="leaveRoom()">Quitter la conversation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Modal -->
+    <div class="overlay" id="sync-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Synchroniser les données</h2>
+                <button class="close-button" onclick="closeModal('sync-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Partager les données de conversation</h3>
+                <p>Copiez ce code et envoyez-le à vos amis pour qu'ils puissent voir toutes les messages :</p>
+                <textarea class="sync-textarea" id="share-data" readonly></textarea>
+                <button class="btn btn-primary" onclick="copyShareData()">Copier le code</button>
+
+                <h3 style="margin-top: 20px;">Importer les données</h3>
+                <p>Collez le code partagé par vos amis ici :</p>
+                <textarea class="sync-textarea" id="load-data" placeholder="Collez le code de synchronisation ici..."></textarea>
+                <button class="btn btn-primary" onclick="loadSharedData()">Importer</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // متغيرات عامة
-        let currentUser = "";
-        let currentRoom = "";
-        let userListArray = [];
-        
-        // إعداد قاعدة البيانات المحلية
-        const DB_NAME = "chatApp";
-        const MESSAGES_STORE = "messages";
-        const ROOMS_STORE = "rooms";
-        const USERS_STORE = "users";
-        
-        // تبديل بين التبويبات
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            
-            if (tab === 'create') {
-                document.querySelector('.tab:first-child').classList.add('active');
-                document.getElementById('create-tab').classList.add('active');
-            } else {
-                document.querySelector('.tab:last-child').classList.add('active');
-                document.getElementById('join-tab').classList.add('active');
+        // Simulation de base de données avec localStorage
+        class Database {
+            constructor() {
+                // Initialiser la base de données si elle n'existe pas
+                if (!localStorage.getItem('users')) {
+                    localStorage.setItem('users', JSON.stringify([]));
+                }
+                if (!localStorage.getItem('rooms')) {
+                    localStorage.setItem('rooms', JSON.stringify([]));
+                }
+                if (!localStorage.getItem('messages')) {
+                    localStorage.setItem('messages', JSON.stringify([]));
+                }
             }
-        }
         
-        // إنشاء غرفة جديدة
-        function createRoom() {
-            const userName = document.getElementById('create-name').value.trim();
-            if (!userName) {
-                alert('الرجاء إدخال اسم المستخدم');
-                return;
+            // Gestion des utilisateurs
+            getUsers() {
+                return JSON.parse(localStorage.getItem('users')) || [];
             }
-            
-            // إنشاء رمز عشوائي للغرفة (6 أرقام)
-            const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-            
-            // حفظ بيانات الغرفة في التخزين المحلي
-            const roomData = {
-                id: roomCode,
-                creator: userName,
-                createdAt: new Date().toISOString(),
-                users: [userName]
-            };
-            
-            localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
-            
-            enterChatRoom(userName, roomCode, true);
-        }
         
-        // الانضمام لغرفة موجودة
-        function joinRoom() {
-            const userName = document.getElementById('join-name').value.trim();
-            const roomCode = document.getElementById('room-code').value.trim();
-            
-            if (!userName) {
-                alert('الرجاء إدخال اسم المستخدم');
-                return;
+            getUserByUsername(username) {
+                const users = this.getUsers();
+                return users.find(user => user.username === username);
             }
-            
-            if (!roomCode) {
-                alert('الرجاء إدخال رمز الغرفة');
-                return;
-            }
-            
-            // التحقق من وجود الغرفة في التخزين المحلي
-            const roomData = JSON.parse(localStorage.getItem(`room_${roomCode}`) || "null");
-            
-            if (!roomData) {
-                // إذا لم تكن الغرفة موجودة، يمكن إنشاؤها تلقائياً
-                const newRoomData = {
-                    id: roomCode,
-                    creator: userName,
-                    createdAt: new Date().toISOString(),
-                    users: [userName]
+        
+            addUser(username, fullName) {
+                const users = this.getUsers();
+                const userId = 'user_' + Date.now();
+                const newUser = {
+                    id: userId,
+                    username: username,
+                    fullName: fullName || username,
+                    createdAt: new Date().toISOString()
                 };
+                users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                return newUser;
+            }
+        
+            // Gestion des salles
+            getRooms() {
+                return JSON.parse(localStorage.getItem('rooms')) || [];
+            }
+        
+            getRoomById(roomId) {
+                const rooms = this.getRooms();
+                return rooms.find(room => room.id === roomId);
+            }
+        
+            getUserRooms(userId) {
+                const rooms = this.getRooms();
+                return rooms.filter(room => room.participants.includes(userId));
+            }
+        
+            createRoom(name, description, creatorId) {
+                const rooms = this.getRooms();
+                const roomId = 'room_' + Date.now();
+                const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const newRoom = {
+                    id: roomId,
+                    code: roomCode,
+                    name: name,
+                    description: description || '',
+                    creatorId: creatorId,
+                    participants: [creatorId],
+                    createdAt: new Date().toISOString()
+                };
+                rooms.push(newRoom);
+                localStorage.setItem('rooms', JSON.stringify(rooms));
+                return newRoom;
+            }
+        
+            joinRoom(roomCode, userId) {
+                const rooms = this.getRooms();
+                const roomIndex = rooms.findIndex(room => room.code === roomCode);
                 
-                localStorage.setItem(`room_${roomCode}`, JSON.stringify(newRoomData));
+                if (roomIndex !== -1) {
+                    if (!rooms[roomIndex].participants.includes(userId)) {
+                        rooms[roomIndex].participants.push(userId);
+                        localStorage.setItem('rooms', JSON.stringify(rooms));
+                    }
+                    return rooms[roomIndex];
+                }
+                return null;
+            }
+        
+            leaveRoom(roomId, userId) {
+                const rooms = this.getRooms();
+                const roomIndex = rooms.findIndex(room => room.id === roomId);
                 
-                enterChatRoom(userName, roomCode, true);
+                if (roomIndex !== -1) {
+                    const participantIndex = rooms[roomIndex].participants.indexOf(userId);
+                    if (participantIndex !== -1) {
+                        rooms[roomIndex].participants.splice(participantIndex, 1);
+                        
+                        // Si la salle est vide, la supprimer
+                        if (rooms[roomIndex].participants.length === 0) {
+                            rooms.splice(roomIndex, 1);
+                        }
+                        
+                        localStorage.setItem('rooms', JSON.stringify(rooms));
+                        return true;
+                    }
+                }
+                return false;
+            }
+        
+            // Gestion des messages
+            getMessages(roomId) {
+                const allMessages = JSON.parse(localStorage.getItem('messages')) || [];
+                return allMessages.filter(message => message.roomId === roomId);
+            }
+        
+            addMessage(roomId, userId, content) {
+                const messages = JSON.parse(localStorage.getItem('messages')) || [];
+                const messageId = 'msg_' + Date.now();
+                const newMessage = {
+                    id: messageId,
+                    roomId: roomId,
+                    userId: userId,
+                    content: content,
+                    createdAt: new Date().toISOString(),
+                    status: 'sent'
+                };
+                messages.push(newMessage);
+                localStorage.setItem('messages', JSON.stringify(messages));
+                return newMessage;
+            }
+        
+            // Exportation des données pour la synchronisation
+            exportRoomData(roomId) {
+                const room = this.getRoomById(roomId);
+                const messages = this.getMessages(roomId);
+                const users = this.getUsers().filter(user => room.participants.includes(user.id));
+                
+                return {
+                    room: room,
+                    messages: messages,
+                    users: users
+                };
+            }
+        
+            // Importation des données synchronisées
+            importRoomData(data) {
+                try {
+                    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+                    
+                    // Fusionner les utilisateurs
+                    let users = this.getUsers();
+                    parsedData.users.forEach(importedUser => {
+                        if (!users.some(user => user.id === importedUser.id)) {
+                            users.push(importedUser);
+                        }
+                    });
+                    localStorage.setItem('users', JSON.stringify(users));
+                    
+                    // Ajouter ou mettre à jour la salle
+                    let rooms = this.getRooms();
+                    const roomIndex = rooms.findIndex(room => room.id === parsedData.room.id);
+                    if (roomIndex === -1) {
+                        rooms.push(parsedData.room);
+                    } else {
+                        // Mettre à jour les participants
+                        parsedData.room.participants.forEach(participantId => {
+                            if (!rooms[roomIndex].participants.includes(participantId)) {
+                                rooms[roomIndex].participants.push(participantId);
+                            }
+                        });
+                    }
+                    localStorage.setItem('rooms', JSON.stringify(rooms));
+                    
+                    // Fusionner les messages
+                    let messages = JSON.parse(localStorage.getItem('messages')) || [];
+                    parsedData.messages.forEach(importedMessage => {
+                        if (!messages.some(message => message.id === importedMessage.id)) {
+                            messages.push(importedMessage);
+                        }
+                    });
+                    localStorage.setItem('messages', JSON.stringify(messages));
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erreur lors de l\'importation des données:', error);
+                    return false;
+                }
+            }
+        }
+        
+        // Initialisation de l'application
+        const db = new Database();
+        let currentUser = null;
+        let currentRoom = null;
+        
+        // Vérifier si l'utilisateur est connecté
+        function checkAuth() {
+            const userId = localStorage.getItem('currentUserId');
+            if (userId) {
+                const users = db.getUsers();
+                currentUser = users.find(user => user.id === userId);
+                
+                if (currentUser) {
+                    showChatInterface();
+                    loadRooms();
+                    return true;
+                }
+            }
+            
+            showAuthInterface();
+            return false;
+        }
+        
+        // Interfaces utilisateur
+        function showAuthInterface() {
+            document.getElementById('auth-container').style.display = 'flex';
+            document.getElementById('chat-area').style.display = 'none';
+            document.getElementById('sidebar').style.display = 'none';
+        }
+        
+        function showChatInterface() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('sidebar').style.display = 'flex';
+            document.getElementById('user-display').textContent = currentUser.username;
+        }
+        
+        // Gestion des onglets de connexion/inscription
+        function switchTab(tab) {
+            const loginTab = document.querySelector('.tab:nth-child(1)');
+            const registerTab = document.querySelector('.tab:nth-child(2)');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            
+            if (tab === 'login') {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
             } else {
-                // إضافة المستخدم إلى قائمة المستخدمين في الغرفة
-                if (!roomData.users.includes(userName)) {
-                    roomData.users.push(userName);
-                    localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+                loginTab.classList.remove('active');
+                registerTab.classList.add('active');
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            }
+        }
+        
+        // Fonctions d'authentification
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            
+            if (!username) {
+                showNotification('Veuillez entrer un nom d\'utilisateur', 'error');
+                return;
+            }
+            
+            let user = db.getUserByUsername(username);
+            
+            if (!user) {
+                showNotification('Utilisateur non trouvé. Veuillez vous inscrire.', 'error');
+                switchTab('register');
+                document.getElementById('register-username').value = username;
+                return;
+            }
+            
+            currentUser = user;
+            localStorage.setItem('currentUserId', user.id);
+            
+            showNotification('Connexion réussie!', 'success');
+            showChatInterface();
+            loadRooms();
+        }
+        
+        function register() {
+            const username = document.getElementById('register-username').value.trim();
+            const fullName = document.getElementById('register-fullname').value.trim();
+            
+            if (!username) {
+                showNotification('Veuillez entrer un nom d\'utilisateur', 'error');
+                return;
+            }
+            
+            const existingUser = db.getUserByUsername(username);
+            
+            if (existingUser) {
+                showNotification('Ce nom d\'utilisateur est déjà pris', 'error');
+                return;
+            }
+            
+            const user = db.addUser(username, fullName);
+            currentUser = user;
+            localStorage.setItem('currentUserId', user.id);
+            
+            showNotification('Inscription réussie!', 'success');
+            showChatInterface();
+            loadRooms();
+        }
+        
+        function logout() {
+            localStorage.removeItem('currentUserId');
+            currentUser = null;
+            currentRoom = null;
+            showAuthInterface();
+        }
+        
+        // Gestion des salles de discussion
+        function loadRooms() {
+            const roomList = document.getElementById('room-list');
+            roomList.innerHTML = '';
+            
+            const userRooms = db.getUserRooms(currentUser.id);
+            
+            if (userRooms.length === 0) {
+                const noRoomDiv = document.createElement('div');
+                noRoomDiv.className = 'system-message';
+                noRoomDiv.textContent = 'Vous n\'avez pas encore de conversations. Créez-en une nouvelle!';
+                roomList.appendChild(noRoomDiv);
+                // Masquer l'interface de chat
+                document.getElementById('chat-title').textContent = '';
+                document.getElementById('chat-subtitle').textContent = '';
+                document.getElementById('messages-container').innerHTML = '';
+                document.getElementById('user-list').innerHTML = '';
+                return;
+            }
+            
+            userRooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+                roomDiv.className = 'room-item';
+                roomDiv.dataset.roomId = room.id;
+                
+                // Vérifier si c'est la salle active
+                if (currentRoom && room.id === currentRoom.id) {
+                    roomDiv.classList.add('active');
                 }
                 
-                enterChatRoom(userName, roomCode, false);
+                roomDiv.innerHTML = `
+                    <div class="room-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="room-info">
+                        <div class="room-name">${room.name}</div>
+                        <div class="room-last-message">${room.description || 'Pas de description'}</div>
+                    </div>
+                `;
+                
+                roomDiv.addEventListener('click', () => {
+                    enterRoom(room.id);
+                });
+                
+                roomList.appendChild(roomDiv);
+            });
+            
+            // Si aucune salle n'est sélectionnée, sélectionner la première
+            if (!currentRoom && userRooms.length > 0) {
+                enterRoom(userRooms[0].id);
             }
         }
         
-        // الدخول إلى غرفة الدردشة
-        function enterChatRoom(userName, roomCode, isCreator) {
-            currentUser = userName;
-            currentRoom = roomCode;
+        function enterRoom(roomId) {
+            // Mettre à jour la salle actuelle
+            currentRoom = db.getRoomById(roomId);
             
-            // إظهار منطقة الدردشة وإخفاء منطقة الدخول
-            document.getElementById('login-area').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'block';
+            // Mettre à jour l'interface
+            document.querySelectorAll('.room-item').forEach(item => {
+                item.classList.remove('active');
+            });
             
-            // عرض رمز الغرفة
-            document.getElementById('room-code-display').textContent = `رمز الغرفة: ${roomCode}`;
+            const roomItem = document.querySelector(`.room-item[data-room-id="${roomId}"]`);
+            if (roomItem) {
+                roomItem.classList.add('active');
+            }
             
-            // تحميل قائمة المستخدمين
-            loadUserList();
+            // Charger les détails de la salle
+            document.getElementById('chat-title').textContent = currentRoom.name;
+            document.getElementById('chat-subtitle').textContent = currentRoom.description || '';
             
-            // تحميل سجل الرسائل
+            // Charger les utilisateurs
+            loadRoomUsers();
+            
+            // Charger les messages
             loadMessages();
             
-            // إضافة رسالة ترحيبية
-            if (isCreator) {
-                addSystemMessage(`تم إنشاء الغرفة بنجاح! شارك الرمز ${roomCode} مع من تريد دعوته.`);
-                
-                // إنشاء رسالة ترحيبية في سجل الرسائل
-                const welcomeMessage = {
-                    id: generateMessageId(),
-                    room: roomCode,
-                    type: "system",
-                    text: `تم إنشاء الغرفة بواسطة ${userName}`,
-                    timestamp: new Date().toISOString()
-                };
-                
-                saveMessage(welcomeMessage);
-            } else {
-                addSystemMessage(`تم الانضمام للغرفة بنجاح!`);
-                
-                // إنشاء رسالة انضمام في سجل الرسائل
-                const joinMessage = {
-                    id: generateMessageId(),
-                    room: roomCode,
-                    type: "system",
-                    text: `${userName} انضم إلى الغرفة`,
-                    timestamp: new Date().toISOString()
-                };
-                
-                saveMessage(joinMessage);
+            // Fermer la sidebar sur mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
             }
-            
-            // تحديث بيانات المزامنة
-            updateSyncData();
         }
         
-        // تحميل قائمة المستخدمين
-        function loadUserList() {
-            const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
+        function loadRoomUsers() {
             const userList = document.getElementById('user-list');
-            userList.innerHTML = "";
+            userList.innerHTML = '';
             
-            if (roomData && roomData.users) {
-                userListArray = roomData.users;
-                
-                roomData.users.forEach(user => {
-                    const userItem = document.createElement('div');
-                    userItem.classList.add('user-item');
-                    userItem.textContent = user + (user === currentUser ? ' (أنت)' : '');
-                    userList.appendChild(userItem);
-                });
-            }
-        }
-        
-        // تحميل سجل الرسائل
-        function loadMessages() {
-            const messagesContainer = document.getElementById('messages');
-            messagesContainer.innerHTML = "";
+            if (!currentRoom) return;
             
-            // الحصول على جميع مفاتيح localStorage
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                
-                // التحقق مما إذا كان المفتاح يبدأ بـ message_ ويحتوي على رمز الغرفة الحالية
-                if (key.startsWith(`message_${currentRoom}_`)) {
-                    const message = JSON.parse(localStorage.getItem(key));
+            currentRoom.participants.forEach(userId => {
+                const user = db.getUsers().find(u => u.id === userId);
+                if (user) {
+                    const userChip = document.createElement('div');
+                    userChip.className = 'user-chip';
                     
-                    switch (message.type) {
-                        case "user":
-                            // رسالة مستخدم عادية
-                            addMessage(message.sender, message.text, message.sender === currentUser);
-                            break;
-                        case "system":
-                            // رسالة نظامية
-                            addSystemMessage(message.text);
-                            break;
-                    }
+                    const initials = user.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : user.username[0].toUpperCase();
+                    
+                    userChip.innerHTML = `
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-name">${user.username}</div>
+                        ${user.id === currentUser.id ? '<div class="current-user-indicator">(Vous)</div>' : ''}
+                    `;
+                    
+                    userList.appendChild(userChip);
                 }
-            }
+            });
         }
         
-        // إنشاء معرف فريد للرسالة
-        function generateMessageId() {
-            return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
-        
-        // حفظ رسالة في قاعدة البيانات المحلية
-        function saveMessage(message) {
-            const messageKey = `message_${message.room}_${message.id}`;
-            localStorage.setItem(messageKey, JSON.stringify(message));
+        function loadMessages() {
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.innerHTML = '';
             
-            // تحديث بيانات المزامنة
-            updateSyncData();
-        }
-        
-        // إضافة رسالة نظامية
-        function addSystemMessage(text) {
-            const messagesContainer = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.textContent = text;
-            messageDiv.style.textAlign = 'center';
-            messageDiv.style.color = '#666';
-            messageDiv.style.margin = '10px 0';
-            messageDiv.style.fontSize = '14px';
-            messagesContainer.appendChild(messageDiv);
+            if (!currentRoom) return;
+            
+            const messages = db.getMessages(currentRoom.id);
+            
+            if (messages.length === 0) {
+                const welcomeMessage = document.createElement('div');
+                welcomeMessage.className = 'system-message';
+                welcomeMessage.textContent = 'Bienvenue dans cette conversation! Envoyez votre premier message.';
+                messagesContainer.appendChild(welcomeMessage);
+                return;
+            }
+            
+            // Trier les messages par date
+            messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            
+            let lastDate = null;
+            
+            messages.forEach(message => {
+                const messageDate = new Date(message.createdAt);
+                const formattedDate = messageDate.toLocaleDateString();
+                
+                // Afficher la date si elle est différente de la précédente
+                if (formattedDate !== lastDate) {
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'system-message';
+                    dateDiv.textContent = formattedDate;
+                    messagesContainer.appendChild(dateDiv);
+                    lastDate = formattedDate;
+                }
+                
+                const user = db.getUsers().find(u => u.id === message.userId);
+                const isCurrentUser = message.userId === currentUser.id;
+                
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = 'message-wrapper';
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isCurrentUser ? 'message-sent' : 'message-received'}`;
+                
+                const time = messageDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                messageDiv.innerHTML = `
+                    ${!isCurrentUser ? `<strong>${user ? user.username : 'Utilisateur inconnu'}</strong><br>` : ''}
+                    <div class="message-content">${message.content}</div>
+                    <div class="message-meta">
+                        <span class="message-time">${time}</span>
+                        ${isCurrentUser ? `<span class="message-status"><i class="fas fa-check"></i></span>` : ''}
+                    </div>
+                `;
+                
+                messageWrapper.appendChild(messageDiv);
+                messagesContainer.appendChild(messageWrapper);
+            });
+            
+            // Faire défiler vers le bas
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        // إضافة رسالة في منطقة الدردشة
-        function addMessage(sender, text, isSent) {
-            const messagesContainer = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
-            messageDiv.classList.add(isSent ? 'sent' : 'received');
-            
-            if (!isSent) {
-                const senderSpan = document.createElement('div');
-                senderSpan.textContent = sender;
-                senderSpan.style.fontSize = '12px';
-                senderSpan.style.marginBottom = '3px';
-                senderSpan.style.fontWeight = 'bold';
-                messageDiv.appendChild(senderSpan);
-            }
-            
-            const textSpan = document.createElement('div');
-            textSpan.textContent = text;
-            messageDiv.appendChild(textSpan);
-            
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-        
-        // إرسال رسالة
         function sendMessage() {
-            const messageInput = document.getElementById('message-input');
-            const messageText = messageInput.value.trim();
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
             
-            if (messageText) {
-                // إنشاء كائن الرسالة
-                const message = {
-                    id: generateMessageId(),
-                    room: currentRoom,
-                    type: "user",
-                    sender: currentUser,
-                    text: messageText,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // حفظ الرسالة في قاعدة البيانات المحلية
-                saveMessage(message);
-                
-                // إضافة الرسالة إلى الواجهة
-                addMessage(currentUser, messageText, true);
-                
-                // مسح حقل الإدخال
-                messageInput.value = '';
-                
-                // تحديث بيانات المزامنة
-                updateSyncData();
-            }
+            if (!content || !currentRoom) return;
+            
+            const message = db.addMessage(currentRoom.id, currentUser.id, content);
+            
+            // Ajouter le message à l'interface
+            const messagesContainer = document.getElementById('messages-container');
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'message-wrapper';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-sent';
+            
+            const messageDate = new Date(message.createdAt);
+            const time = messageDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                <div class="message-meta">
+                    <span class="message-time">${time}</span>
+                    <span class="message-status"><i class="fas fa-check"></i></span>
+                </div>
+            `;
+            
+            messageWrapper.appendChild(messageDiv);
+            messagesContainer.appendChild(messageWrapper);
+            
+            // Réinitialiser l'input et faire défiler vers le bas
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Simuler une réponse après un délai aléatoire (pour la démo uniquement)
+            simulateResponse();
         }
         
-        // السماح بإرسال الرسالة بالضغط على Enter
-        document.getElementById('message-input').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        });
+        // Pour la démo seulement : simuler une réponse d'un autre utilisateur
+        function simulateResponse() {
+            // Ne pas simuler de réponse s'il n'y a qu'un seul utilisateur dans la salle
+            if (currentRoom.participants.length <= 1) return;
+            
+            const randomDelay = Math.floor(Math.random() * 3000) + 1000; // Entre 1 et 4 secondes
+            
+            setTimeout(() => {
+                // Choisir un utilisateur aléatoire autre que l'utilisateur actuel
+                const otherUsers = currentRoom.participants.filter(userId => userId !== currentUser.id);
+                if (otherUsers.length === 0) return;
+                
+                const randomUserIndex = Math.floor(Math.random() * otherUsers.length);
+                const randomUserId = otherUsers[randomUserIndex];
+                
+                const responses = [
+                    "D'accord, je comprends.",
+                    "Merci pour l'information !",
+                    "C'est intéressant ce que tu dis.",
+                    "Je suis d'accord avec toi.",
+                    "Pouvons-nous en discuter plus tard ?",
+                    "Super ! Ça me semble bien.",
+                    "Comment vas-tu aujourd'hui ?",
+                    "Avez-vous reçu le document que j'ai envoyé ?",
+                    "On se voit au bureau demain ?",
+                    "N'oubliez pas la réunion de demain.",
+                ];
+                
+                const randomResponseIndex = Math.floor(Math.random() * responses.length);
+                const responseContent = responses[randomResponseIndex];
+                
+                const message = db.addMessage(currentRoom.id, randomUserId, responseContent);
+                
+                // Si la salle actuelle est toujours la même, afficher le message
+                if (currentRoom && message.roomId === currentRoom.id) {
+                    const user = db.getUsers().find(u => u.id === randomUserId);
+                    
+                    const messagesContainer = document.getElementById('messages-container');
+                    const messageWrapper = document.createElement('div');
+                    messageWrapper.className = 'message-wrapper';
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message message-received';
+                    
+                    const messageDate = new Date(message.createdAt);
+                    const time = messageDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    messageDiv.innerHTML = `
+                        <strong>${user ? user.username : 'Utilisateur inconnu'}</strong><br>
+                        <div class="message-content">${responseContent}</div>
+                        <div class="message-meta">
+                            <span class="message-time">${time}</span>
+                        </div>
+                    `;
+                    
+                    messageWrapper.appendChild(messageDiv);
+                    messagesContainer.appendChild(messageWrapper);
+                    
+                    // Faire défiler vers le bas
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, randomDelay);
+        }
         
-        // مغادرة الغرفة
+        // Gestion des modales
+        function createNewRoom() {
+            document.getElementById('create-room-modal').style.display = 'flex';
+        }
+        
+        function confirmCreateRoom() {
+            const roomName = document.getElementById('room-name').value.trim();
+            const roomDescription = document.getElementById('room-description').value.trim();
+            
+            if (!roomName) {
+                showNotification('Veuillez entrer un nom pour la conversation', 'error');
+                return;
+            }
+            
+            const room = db.createRoom(roomName, roomDescription, currentUser.id);
+            closeModal('create-room-modal');
+            
+            // Réinitialiser les champs
+            document.getElementById('room-name').value = '';
+            document.getElementById('room-description').value = '';
+            
+            // Recharger les salles et entrer dans la nouvelle salle
+            loadRooms();
+            enterRoom(room.id);
+            
+            showNotification('Conversation créée avec succès!', 'success');
+            
+            // Ajouter un message système
+            const welcomeMessage = `Bienvenue dans la conversation "${roomName}" !`;
+            db.addMessage(room.id, currentUser.id, welcomeMessage);
+            loadMessages();
+        }
+        
+        function showRoomInfo() {
+            if (!currentRoom) return;
+            
+            const creator = db.getUsers().find(user => user.id === currentRoom.creatorId);
+            const creationDate = new Date(currentRoom.createdAt).toLocaleDateString();
+            
+            document.getElementById('room-code-text').textContent = currentRoom.code;
+            document.getElementById('room-creator').textContent = creator ? creator.username : 'Utilisateur inconnu';
+            document.getElementById('room-creation-date').textContent = creationDate;
+            
+            document.getElementById('room-info-modal').style.display = 'flex';
+        }
+        
         function leaveRoom() {
-            if (currentRoom) {
-                // إنشاء رسالة مغادرة في سجل الرسائل
-                const leaveMessage = {
-                    id: generateMessageId(),
-                    room: currentRoom,
-                    type: "system",
-                    text: `${currentUser} غادر الغرفة`,
-                    timestamp: new Date().toISOString()
-                };
-                
-                saveMessage(leaveMessage);
-                
-                // إزالة المستخدم من قائمة المستخدمين في الغرفة
-                const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
-                if (roomData && roomData.users) {
-                    roomData.users = roomData.users.filter(user => user !== currentUser);
-                    localStorage.setItem(`room_${currentRoom}`, JSON.stringify(roomData));
-                }
-            }
+            if (!currentRoom) return;
             
-            // إعادة تعيين الواجهة
-            document.getElementById('chat-area').style.display = 'none';
-            document.getElementById('login-area').style.display = 'block';
-            document.getElementById('messages').innerHTML = '';
-            document.getElementById('user-list').innerHTML = '';
-            document.getElementById('create-name').value = '';
-            document.getElementById('join-name').value = '';
-            document.getElementById('room-code').value = '';
-            document.getElementById('sync-area').style.display = 'none';
+            const confirmed = confirm(`Êtes-vous sûr de vouloir quitter la conversation "${currentRoom.name}" ?`);
             
-            currentUser = "";
-            currentRoom = "";
-        }
-        
-        // عرض/إخفاء منطقة المزامنة
-        function toggleSyncArea() {
-            const syncArea = document.getElementById('sync-area');
-            if (syncArea.style.display === 'none' || !syncArea.style.display) {
-                syncArea.style.display = 'block';
-                updateSyncData();
-            } else {
-                syncArea.style.display = 'none';
+            if (confirmed) {
+                db.leaveRoom(currentRoom.id, currentUser.id);
+                closeModal('room-info-modal');
+                
+                // Mettre à jour l'interface
+                currentRoom = null;
+                loadRooms();
+                
+                showNotification('Vous avez quitté la conversation', 'success');
             }
         }
         
-        // تحديث بيانات المزامنة
-        function updateSyncData() {
-            if (document.getElementById('sync-area').style.display === 'block' && currentRoom) {
-                // جمع كل البيانات المتعلقة بالغرفة الحالية
-                const syncData = {
-                    room: JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null"),
-                    messages: []
-                };
-                
-                // جمع جميع الرسائل المتعلقة بالغرفة
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith(`message_${currentRoom}_`)) {
-                        syncData.messages.push(JSON.parse(localStorage.getItem(key)));
-                    }
-                }
-                
-                // تحويل البيانات إلى نص JSON وترميزها
-                const jsonData = JSON.stringify(syncData);
-                const encodedData = btoa(jsonData);
-                
-                document.getElementById('share-data').value = encodedData;
-            }
+        function showSyncModal() {
+            if (!currentRoom) return;
+            
+            // Préparer les données pour le partage
+            const roomData = db.exportRoomData(currentRoom.id);
+            document.getElementById('share-data').value = JSON.stringify(roomData);
+            
+            document.getElementById('sync-modal').style.display = 'flex';
         }
         
-        // نسخ بيانات المزامنة
+        function copyRoomCode() {
+            const roomCode = document.getElementById('room-code-text').textContent;
+            navigator.clipboard.writeText(roomCode).then(() => {
+                showNotification('Code copié dans le presse-papiers!', 'success');
+            });
+        }
+        
         function copyShareData() {
-            const shareDataTextarea = document.getElementById('share-data');
-            shareDataTextarea.select();
-            document.execCommand('copy');
-            
-            showNotification('تم نسخ البيانات بنجاح!');
+            const shareData = document.getElementById('share-data').value;
+            navigator.clipboard.writeText(shareData).then(() => {
+                showNotification('Données copiées dans le presse-papiers!', 'success');
+            });
         }
         
-        // تحميل البيانات المشتركة
         function loadSharedData() {
-            const loadDataTextarea = document.getElementById('load-data');
-            const encodedData = loadDataTextarea.value.trim();
+            const sharedData = document.getElementById('load-data').value.trim();
             
-            if (!encodedData) {
-                showNotification('الرجاء إدخال البيانات المشتركة أولاً', 'error');
+            if (!sharedData) {
+                showNotification('Veuillez entrer des données partagées', 'error');
                 return;
             }
             
             try {
-                // فك ترميز البيانات وتحويلها إلى كائن JavaScript
-                const jsonData = atob(encodedData);
-                const syncData = JSON.parse(jsonData);
+                const success = db.importRoomData(sharedData);
                 
-                // التحقق من صحة البيانات
-                if (!syncData.room || !syncData.room.id) {
-                    throw new Error('بيانات غير صالحة');
+                if (success) {
+                    document.getElementById('load-data').value = '';
+                    closeModal('sync-modal');
+                    
+                    // Recharger les salles
+                    loadRooms();
+                    
+                    showNotification('Données importées avec succès!', 'success');
+                } else {
+                    showNotification('Échec de l\'importation des données', 'error');
                 }
-                
-                // تحديث بيانات الغرفة
-                localStorage.setItem(`room_${syncData.room.id}`, JSON.stringify(syncData.room));
-                
-                // تحديث الرسائل
-                syncData.messages.forEach(message => {
-                    const messageKey = `message_${message.room}_${message.id}`;
-                    localStorage.setItem(messageKey, JSON.stringify(message));
-                });
-                
-                // إذا كان المستخدم في نفس الغرفة، تحديث الواجهة
-                if (currentRoom === syncData.room.id) {
-                    loadUserList();
-                    loadMessages();
-                }
-                
-                showNotification('تم تحميل البيانات بنجاح!');
-                loadDataTextarea.value = '';
             } catch (error) {
-                showNotification('خطأ في تحميل البيانات: ' + error.message, 'error');
+                console.error('Erreur lors de l\'importation des données:', error);
+                showNotification('Format de données invalide', 'error');
             }
         }
         
-        // عرض إشعار
-        function showNotification(message, type = 'success') {
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Toggle sidebar pour mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+        
+        // Notifications
+        function showNotification(message, type) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
-            notification.style.backgroundColor = type === 'success' ? 'rgba(0, 128, 0, 0.7)' : 'rgba(255, 0, 0, 0.7)';
-            notification.style.display = 'block';
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
             
             setTimeout(() => {
-                notification.style.display = 'none';
+                notification.classList.remove('show');
             }, 3000);
         }
-    </script>
+        
+        // Écouteurs d'événements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier l'authentification
+            checkAuth();
+            
+            // Événement d'envoi de message avec touche Entrée
+            document.getElementById('message-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Adapter l'interface pour le mobile
+            function handleResize() {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('show');
+                }
+            }
+            
+            window.addEventListener('resize', handleResize);
+            
+            // Rejoindre une salle par code (simulé pour la démo)
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+J pour simuler un "rejoindre une salle"
+                if (e.ctrlKey && e.key === 'j' && currentUser) {
+                    const roomCode = prompt('Entrez le code de la salle à rejoindre:');
+                    if (roomCode) {
+                        const room = db.joinRoom(roomCode, currentUser.id);
+                        if (room) {
+                            loadRooms();
+                            enterRoom(room.id);
+                            showNotification('Vous avez rejoint la conversation!', 'success');
+                        } else {
+                            showNotification('Code de salle invalide', 'error');
+                        }
+                    }
+                }
+            });
+            
+            // Pour démonstration: créer des utilisateurs et salles de test si la base est vide
+            initDemoDataIfEmpty();
+        });
+        
+        // Fonction de démonstration pour pré-remplir avec des données
+        function initDemoDataIfEmpty() {
+            const users = db.getUsers();
+            
+            // Si des utilisateurs existent déjà, ne rien faire
+            if (users.length > 0) return;
+            
+            // Créer des utilisateurs de démonstration
+            const user1 = db.addUser('alice', 'Alice Dupont');
+            const user2 = db.addUser('bob', 'Bob Martin');
+            const user3 = db.addUser('charlie', 'Charlie Dubois');
+            
+            // Créer une salle de démonstration
+            const room = db.createRoom('Équipe Marketing', 'Discussion sur la nouvelle campagne', user1.id);
+            
+            // Ajouter les autres utilisateurs
+            db.joinRoom(room.code, user2.id);
+            db.joinRoom(room.code, user3.id);
+            
+            // Ajouter quelques messages
+            db.addMessage(room.id, user1.id, 'Bonjour tout le monde ! Bienvenue dans notre espace de discussion.');
+            db.addMessage(room.id, user2.id, 'Salut Alice ! Comment vas-tu ?');
+            db.addMessage(room.id, user3.id, 'Bonjour à tous ! Je suis ravi de rejoindre cette équipe.');
+            db.addMessage(room.id, user1.id, 'Nous devons discuter de la nouvelle campagne de marketing pour le trimestre prochain.');
+            db.addMessage(room.id, user2.id, 'J\'ai quelques idées intéressantes à partager !');
+            
+            // Créer une autre salle
+            const room2 = db.createRoom('Support Technique', 'Assistance et dépannage', user3.id);
+            db.joinRoom(room2.code, user1.id);
+            
+            db.addMessage(room2.id, user3.id, 'Voici notre nouveau canal de support technique.');
+            db.addMessage(room2.id, user1.id, 'Super ! Je pense que cela va améliorer notre réactivité.');
+        }
+        </script>
 </body>
-</html>
+    </html>
