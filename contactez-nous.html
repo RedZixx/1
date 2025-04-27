@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق غرف الدردشة</title>
-    <!-- Firebase SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
+    <title>تطبيق غرف الدردشة بقاعدة بيانات محلية</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -116,12 +113,6 @@
             background-color: #e4e6eb;
             margin-right: auto;
         }
-        .system-message {
-            text-align: center;
-            color: #666;
-            margin: 10px 0;
-            font-size: 14px;
-        }
         .message-input {
             display: flex;
         }
@@ -140,16 +131,68 @@
             margin-bottom: 15px;
             color: #1877f2;
         }
-        .copy-button {
-            background-color: #28a745;
+        .user-list {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .user-item {
+            display: inline-block;
+            background-color: #e4e6eb;
             padding: 5px 10px;
-            font-size: 12px;
-            margin-right: 5px;
-            cursor: pointer;
+            border-radius: 15px;
+            margin-left: 5px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .sync-data {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .sync-area {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            display: none;
+        }
+        .sync-textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+        #share-data-btn {
+            background-color: #4caf50;
+        }
+        #load-data-btn {
+            background-color: #2196f3;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
 <body>
+    <div class="notification" id="notification"></div>
+    
     <div class="container">
         <h1>تطبيق غرف الدردشة</h1>
         
@@ -183,41 +226,52 @@
         
         <!-- منطقة الدردشة -->
         <div id="chat-area">
-            <div class="room-code">
-                <span id="room-code-display"></span>
-                <button class="copy-button" onclick="copyRoomCode()">نسخ الرمز</button>
+            <div class="room-code" id="room-code-display"></div>
+            
+            <div class="user-list" id="user-list">
+                <!-- هنا سيتم عرض المستخدمين المتصلين -->
             </div>
+            
             <div class="chat-container" id="messages">
                 <!-- هنا سيتم عرض الرسائل -->
             </div>
+            
             <div class="message-input">
                 <input type="text" id="message-input" placeholder="اكتب رسالتك هنا...">
                 <button onclick="sendMessage()">إرسال</button>
             </div>
+            
+            <div class="sync-data">
+                <button id="toggle-sync-btn" onclick="toggleSyncArea()">مزامنة البيانات بين المستخدمين</button>
+                
+                <div class="sync-area" id="sync-area">
+                    <h3>مزامنة البيانات</h3>
+                    <p>لمشاركة بيانات الدردشة، انسخ النص أدناه وارسله لأصدقائك:</p>
+                    <textarea class="sync-textarea" id="share-data" readonly></textarea>
+                    <button id="share-data-btn" onclick="copyShareData()">نسخ البيانات</button>
+                    
+                    <h3 style="margin-top: 20px;">استيراد البيانات</h3>
+                    <p>الصق بيانات الدردشة المشتركة من أصدقائك هنا:</p>
+                    <textarea class="sync-textarea" id="load-data" placeholder="الصق بيانات الدردشة هنا..."></textarea>
+                    <button id="load-data-btn" onclick="loadSharedData()">تحميل البيانات</button>
+                </div>
+            </div>
+            
             <button onclick="leaveRoom()" style="margin-top: 10px; background-color: #dc3545;">مغادرة الغرفة</button>
         </div>
     </div>
 
     <script>
-        // تكوين Firebase - قم بتعديل هذه البيانات بمعلومات مشروع Firebase الخاص بك
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // تهيئة Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
         // متغيرات عامة
         let currentUser = "";
         let currentRoom = "";
-        let messagesRef = null;
+        let userListArray = [];
+        
+        // إعداد قاعدة البيانات المحلية
+        const DB_NAME = "chatApp";
+        const MESSAGES_STORE = "messages";
+        const ROOMS_STORE = "rooms";
+        const USERS_STORE = "users";
         
         // تبديل بين التبويبات
         function switchTab(tab) {
@@ -233,16 +287,6 @@
             }
         }
         
-        // إنشاء معرف فريد
-        function generateRoomCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            for (let i = 0; i < 6; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
-        
         // إنشاء غرفة جديدة
         function createRoom() {
             const userName = document.getElementById('create-name').value.trim();
@@ -251,26 +295,20 @@
                 return;
             }
             
-            // إنشاء رمز عشوائي للغرفة
-            const roomCode = generateRoomCode();
+            // إنشاء رمز عشوائي للغرفة (6 أرقام)
+            const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
             
-            // إنشاء الغرفة في قاعدة البيانات
-            database.ref(`rooms/${roomCode}`).set({
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                createdBy: userName
-            }).then(() => {
-                // إضافة رسالة نظامية
-                database.ref(`rooms/${roomCode}/messages`).push({
-                    type: 'system',
-                    text: `${userName} أنشأ الغرفة`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                // الدخول إلى الغرفة
-                enterChatRoom(userName, roomCode);
-            }).catch(error => {
-                alert('فشل إنشاء الغرفة: ' + error.message);
-            });
+            // حفظ بيانات الغرفة في التخزين المحلي
+            const roomData = {
+                id: roomCode,
+                creator: userName,
+                createdAt: new Date().toISOString(),
+                users: [userName]
+            };
+            
+            localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+            
+            enterChatRoom(userName, roomCode, true);
         }
         
         // الانضمام لغرفة موجودة
@@ -288,31 +326,36 @@
                 return;
             }
             
-            // التحقق من وجود الغرفة
-            database.ref(`rooms/${roomCode}`).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    // إضافة رسالة نظامية
-                    database.ref(`rooms/${roomCode}/messages`).push({
-                        type: 'system',
-                        text: `${userName} انضم إلى الغرفة`,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    // الدخول إلى الغرفة
-                    enterChatRoom(userName, roomCode);
-                } else {
-                    alert('الغرفة غير موجودة');
+            // التحقق من وجود الغرفة في التخزين المحلي
+            const roomData = JSON.parse(localStorage.getItem(`room_${roomCode}`) || "null");
+            
+            if (!roomData) {
+                // إذا لم تكن الغرفة موجودة، يمكن إنشاؤها تلقائياً
+                const newRoomData = {
+                    id: roomCode,
+                    creator: userName,
+                    createdAt: new Date().toISOString(),
+                    users: [userName]
+                };
+                
+                localStorage.setItem(`room_${roomCode}`, JSON.stringify(newRoomData));
+                
+                enterChatRoom(userName, roomCode, true);
+            } else {
+                // إضافة المستخدم إلى قائمة المستخدمين في الغرفة
+                if (!roomData.users.includes(userName)) {
+                    roomData.users.push(userName);
+                    localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
                 }
-            }).catch(error => {
-                alert('فشل الانضمام للغرفة: ' + error.message);
-            });
+                
+                enterChatRoom(userName, roomCode, false);
+            }
         }
         
         // الدخول إلى غرفة الدردشة
-        function enterChatRoom(userName, roomCode) {
+        function enterChatRoom(userName, roomCode, isCreator) {
             currentUser = userName;
             currentRoom = roomCode;
-            messagesRef = database.ref(`rooms/${roomCode}/messages`);
             
             // إظهار منطقة الدردشة وإخفاء منطقة الدخول
             document.getElementById('login-area').style.display = 'none';
@@ -321,28 +364,113 @@
             // عرض رمز الغرفة
             document.getElementById('room-code-display').textContent = `رمز الغرفة: ${roomCode}`;
             
-            // إضافة مستمع للرسائل الجديدة
-            messagesRef.on('child_added', snapshot => {
-                const message = snapshot.val();
-                
-                if (message.type === 'system') {
-                    addSystemMessage(message.text);
-                } else {
-                    addMessage(message.sender, message.text, message.sender === currentUser);
-                }
-            });
+            // تحميل قائمة المستخدمين
+            loadUserList();
             
-            // مسح حقل الإدخال
-            document.getElementById('message-input').value = '';
-            document.getElementById('message-input').focus();
+            // تحميل سجل الرسائل
+            loadMessages();
+            
+            // إضافة رسالة ترحيبية
+            if (isCreator) {
+                addSystemMessage(`تم إنشاء الغرفة بنجاح! شارك الرمز ${roomCode} مع من تريد دعوته.`);
+                
+                // إنشاء رسالة ترحيبية في سجل الرسائل
+                const welcomeMessage = {
+                    id: generateMessageId(),
+                    room: roomCode,
+                    type: "system",
+                    text: `تم إنشاء الغرفة بواسطة ${userName}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                saveMessage(welcomeMessage);
+            } else {
+                addSystemMessage(`تم الانضمام للغرفة بنجاح!`);
+                
+                // إنشاء رسالة انضمام في سجل الرسائل
+                const joinMessage = {
+                    id: generateMessageId(),
+                    room: roomCode,
+                    type: "system",
+                    text: `${userName} انضم إلى الغرفة`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                saveMessage(joinMessage);
+            }
+            
+            // تحديث بيانات المزامنة
+            updateSyncData();
+        }
+        
+        // تحميل قائمة المستخدمين
+        function loadUserList() {
+            const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = "";
+            
+            if (roomData && roomData.users) {
+                userListArray = roomData.users;
+                
+                roomData.users.forEach(user => {
+                    const userItem = document.createElement('div');
+                    userItem.classList.add('user-item');
+                    userItem.textContent = user + (user === currentUser ? ' (أنت)' : '');
+                    userList.appendChild(userItem);
+                });
+            }
+        }
+        
+        // تحميل سجل الرسائل
+        function loadMessages() {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = "";
+            
+            // الحصول على جميع مفاتيح localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                
+                // التحقق مما إذا كان المفتاح يبدأ بـ message_ ويحتوي على رمز الغرفة الحالية
+                if (key.startsWith(`message_${currentRoom}_`)) {
+                    const message = JSON.parse(localStorage.getItem(key));
+                    
+                    switch (message.type) {
+                        case "user":
+                            // رسالة مستخدم عادية
+                            addMessage(message.sender, message.text, message.sender === currentUser);
+                            break;
+                        case "system":
+                            // رسالة نظامية
+                            addSystemMessage(message.text);
+                            break;
+                    }
+                }
+            }
+        }
+        
+        // إنشاء معرف فريد للرسالة
+        function generateMessageId() {
+            return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        // حفظ رسالة في قاعدة البيانات المحلية
+        function saveMessage(message) {
+            const messageKey = `message_${message.room}_${message.id}`;
+            localStorage.setItem(messageKey, JSON.stringify(message));
+            
+            // تحديث بيانات المزامنة
+            updateSyncData();
         }
         
         // إضافة رسالة نظامية
         function addSystemMessage(text) {
             const messagesContainer = document.getElementById('messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'system-message';
             messageDiv.textContent = text;
+            messageDiv.style.textAlign = 'center';
+            messageDiv.style.color = '#666';
+            messageDiv.style.margin = '10px 0';
+            messageDiv.style.fontSize = '14px';
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -376,30 +504,29 @@
             const messageInput = document.getElementById('message-input');
             const messageText = messageInput.value.trim();
             
-            if (messageText && currentRoom && currentUser) {
-                // إرسال الرسالة إلى قاعدة البيانات
-                messagesRef.push({
+            if (messageText) {
+                // إنشاء كائن الرسالة
+                const message = {
+                    id: generateMessageId(),
+                    room: currentRoom,
+                    type: "user",
                     sender: currentUser,
                     text: messageText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).catch(error => {
-                    alert('فشل إرسال الرسالة: ' + error.message);
-                });
+                    timestamp: new Date().toISOString()
+                };
+                
+                // حفظ الرسالة في قاعدة البيانات المحلية
+                saveMessage(message);
+                
+                // إضافة الرسالة إلى الواجهة
+                addMessage(currentUser, messageText, true);
                 
                 // مسح حقل الإدخال
                 messageInput.value = '';
-                messageInput.focus();
+                
+                // تحديث بيانات المزامنة
+                updateSyncData();
             }
-        }
-        
-        // نسخ رمز الغرفة
-        function copyRoomCode() {
-            const roomCode = currentRoom;
-            navigator.clipboard.writeText(roomCode).then(() => {
-                alert('تم نسخ رمز الغرفة');
-            }).catch(err => {
-                alert('فشل نسخ الرمز: ' + err);
-            });
         }
         
         // السماح بإرسال الرسالة بالضغط على Enter
@@ -411,38 +538,137 @@
         
         // مغادرة الغرفة
         function leaveRoom() {
-            if (currentRoom && currentUser) {
-                // إضافة رسالة نظامية
-                database.ref(`rooms/${currentRoom}/messages`).push({
-                    type: 'system',
+            if (currentRoom) {
+                // إنشاء رسالة مغادرة في سجل الرسائل
+                const leaveMessage = {
+                    id: generateMessageId(),
+                    room: currentRoom,
+                    type: "system",
                     text: `${currentUser} غادر الغرفة`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).catch(error => {
-                    console.error('فشل إرسال رسالة المغادرة:', error);
-                });
+                    timestamp: new Date().toISOString()
+                };
                 
-                // إلغاء الاستماع للرسائل
-                if (messagesRef) {
-                    messagesRef.off();
+                saveMessage(leaveMessage);
+                
+                // إزالة المستخدم من قائمة المستخدمين في الغرفة
+                const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
+                if (roomData && roomData.users) {
+                    roomData.users = roomData.users.filter(user => user !== currentUser);
+                    localStorage.setItem(`room_${currentRoom}`, JSON.stringify(roomData));
                 }
             }
             
-            // إعادة تعيين المتغيرات
-            currentUser = "";
-            currentRoom = "";
-            messagesRef = null;
-            
-            // إخفاء منطقة الدردشة وإظهار منطقة الدخول
+            // إعادة تعيين الواجهة
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('login-area').style.display = 'block';
-            
-            // مسح الرسائل
             document.getElementById('messages').innerHTML = '';
-            
-            // مسح حقول الإدخال
+            document.getElementById('user-list').innerHTML = '';
             document.getElementById('create-name').value = '';
             document.getElementById('join-name').value = '';
             document.getElementById('room-code').value = '';
+            document.getElementById('sync-area').style.display = 'none';
+            
+            currentUser = "";
+            currentRoom = "";
+        }
+        
+        // عرض/إخفاء منطقة المزامنة
+        function toggleSyncArea() {
+            const syncArea = document.getElementById('sync-area');
+            if (syncArea.style.display === 'none' || !syncArea.style.display) {
+                syncArea.style.display = 'block';
+                updateSyncData();
+            } else {
+                syncArea.style.display = 'none';
+            }
+        }
+        
+        // تحديث بيانات المزامنة
+        function updateSyncData() {
+            if (document.getElementById('sync-area').style.display === 'block' && currentRoom) {
+                // جمع كل البيانات المتعلقة بالغرفة الحالية
+                const syncData = {
+                    room: JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null"),
+                    messages: []
+                };
+                
+                // جمع جميع الرسائل المتعلقة بالغرفة
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith(`message_${currentRoom}_`)) {
+                        syncData.messages.push(JSON.parse(localStorage.getItem(key)));
+                    }
+                }
+                
+                // تحويل البيانات إلى نص JSON وترميزها
+                const jsonData = JSON.stringify(syncData);
+                const encodedData = btoa(jsonData);
+                
+                document.getElementById('share-data').value = encodedData;
+            }
+        }
+        
+        // نسخ بيانات المزامنة
+        function copyShareData() {
+            const shareDataTextarea = document.getElementById('share-data');
+            shareDataTextarea.select();
+            document.execCommand('copy');
+            
+            showNotification('تم نسخ البيانات بنجاح!');
+        }
+        
+        // تحميل البيانات المشتركة
+        function loadSharedData() {
+            const loadDataTextarea = document.getElementById('load-data');
+            const encodedData = loadDataTextarea.value.trim();
+            
+            if (!encodedData) {
+                showNotification('الرجاء إدخال البيانات المشتركة أولاً', 'error');
+                return;
+            }
+            
+            try {
+                // فك ترميز البيانات وتحويلها إلى كائن JavaScript
+                const jsonData = atob(encodedData);
+                const syncData = JSON.parse(jsonData);
+                
+                // التحقق من صحة البيانات
+                if (!syncData.room || !syncData.room.id) {
+                    throw new Error('بيانات غير صالحة');
+                }
+                
+                // تحديث بيانات الغرفة
+                localStorage.setItem(`room_${syncData.room.id}`, JSON.stringify(syncData.room));
+                
+                // تحديث الرسائل
+                syncData.messages.forEach(message => {
+                    const messageKey = `message_${message.room}_${message.id}`;
+                    localStorage.setItem(messageKey, JSON.stringify(message));
+                });
+                
+                // إذا كان المستخدم في نفس الغرفة، تحديث الواجهة
+                if (currentRoom === syncData.room.id) {
+                    loadUserList();
+                    loadMessages();
+                }
+                
+                showNotification('تم تحميل البيانات بنجاح!');
+                loadDataTextarea.value = '';
+            } catch (error) {
+                showNotification('خطأ في تحميل البيانات: ' + error.message, 'error');
+            }
+        }
+        
+        // عرض إشعار
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.backgroundColor = type === 'success' ? 'rgba(0, 128, 0, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
         }
     </script>
 </body>
