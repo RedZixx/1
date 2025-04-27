@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق غرف الدردشة</title>
+    <title>تطبيق غرف الدردشة بقاعدة بيانات محلية</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -149,20 +149,50 @@
             margin-bottom: 5px;
             font-size: 14px;
         }
-        .connection-status {
+        .sync-data {
+            margin-top: 15px;
             text-align: center;
+        }
+        .sync-area {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
             margin-top: 10px;
-            font-size: 14px;
+            display: none;
         }
-        .online {
-            color: green;
+        .sync-textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
         }
-        .offline {
-            color: red;
+        #share-data-btn {
+            background-color: #4caf50;
+        }
+        #load-data-btn {
+            background-color: #2196f3;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
 <body>
+    <div class="notification" id="notification"></div>
+    
     <div class="container">
         <h1>تطبيق غرف الدردشة</h1>
         
@@ -192,10 +222,6 @@
                 </div>
                 <button onclick="joinRoom()">الانضمام للغرفة</button>
             </div>
-            
-            <div class="connection-status" id="connection-status">
-                حالة الاتصال: <span class="offline">غير متصل</span>
-            </div>
         </div>
         
         <!-- منطقة الدردشة -->
@@ -215,6 +241,22 @@
                 <button onclick="sendMessage()">إرسال</button>
             </div>
             
+            <div class="sync-data">
+                <button id="toggle-sync-btn" onclick="toggleSyncArea()">مزامنة البيانات بين المستخدمين</button>
+                
+                <div class="sync-area" id="sync-area">
+                    <h3>مزامنة البيانات</h3>
+                    <p>لمشاركة بيانات الدردشة، انسخ النص أدناه وارسله لأصدقائك:</p>
+                    <textarea class="sync-textarea" id="share-data" readonly></textarea>
+                    <button id="share-data-btn" onclick="copyShareData()">نسخ البيانات</button>
+                    
+                    <h3 style="margin-top: 20px;">استيراد البيانات</h3>
+                    <p>الصق بيانات الدردشة المشتركة من أصدقائك هنا:</p>
+                    <textarea class="sync-textarea" id="load-data" placeholder="الصق بيانات الدردشة هنا..."></textarea>
+                    <button id="load-data-btn" onclick="loadSharedData()">تحميل البيانات</button>
+                </div>
+            </div>
+            
             <button onclick="leaveRoom()" style="margin-top: 10px; background-color: #dc3545;">مغادرة الغرفة</button>
         </div>
     </div>
@@ -223,98 +265,13 @@
         // متغيرات عامة
         let currentUser = "";
         let currentRoom = "";
-        let socket = null;
-        const serverUrl = "wss://echo.websocket.events"; // استخدم خدمة WebSocket عامة للاختبار
+        let userListArray = [];
         
-        // إنشاء اتصال WebSocket
-        function connectWebSocket() {
-            try {
-                socket = new WebSocket(serverUrl);
-                
-                socket.onopen = function(e) {
-                    updateConnectionStatus(true);
-                };
-                
-                socket.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    handleIncomingMessage(data);
-                };
-                
-                socket.onclose = function(event) {
-                    updateConnectionStatus(false);
-                    
-                    // محاولة إعادة الاتصال بعد 5 ثوانٍ
-                    setTimeout(function() {
-                        if (currentRoom) {
-                            connectWebSocket();
-                        }
-                    }, 5000);
-                };
-                
-                socket.onerror = function(error) {
-                    updateConnectionStatus(false);
-                    addSystemMessage("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.");
-                };
-            } catch (err) {
-                addSystemMessage("تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.");
-            }
-        }
-        
-        // تحديث حالة الاتصال
-        function updateConnectionStatus(isConnected) {
-            const statusElement = document.querySelector("#connection-status span");
-            if (isConnected) {
-                statusElement.textContent = "متصل";
-                statusElement.className = "online";
-            } else {
-                statusElement.textContent = "غير متصل";
-                statusElement.className = "offline";
-            }
-        }
-        
-        // معالجة الرسائل الواردة
-        function handleIncomingMessage(data) {
-            switch (data.type) {
-                case "message":
-                    // إضافة رسالة جديدة
-                    if (data.room === currentRoom && data.sender !== currentUser) {
-                        addMessage(data.sender, data.text, false);
-                    }
-                    break;
-                case "join":
-                    // إضافة مستخدم جديد إلى القائمة
-                    if (data.room === currentRoom && data.user !== currentUser) {
-                        addUserToList(data.user);
-                        addSystemMessage(`${data.user} انضم إلى الغرفة`);
-                    }
-                    break;
-                case "leave":
-                    // إزالة مستخدم من القائمة
-                    if (data.room === currentRoom) {
-                        removeUserFromList(data.user);
-                        addSystemMessage(`${data.user} غادر الغرفة`);
-                    }
-                    break;
-                case "users":
-                    // تحديث قائمة المستخدمين
-                    if (data.room === currentRoom) {
-                        updateUserList(data.users);
-                    }
-                    break;
-            }
-        }
-        
-        // إرسال رسالة عبر WebSocket
-        function sendToServer(data) {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify(data));
-            } else {
-                if (socket && socket.readyState !== WebSocket.CONNECTING) {
-                    addSystemMessage("أنت غير متصل حالياً. جاري إعادة الاتصال...");
-                    connectWebSocket();
-                }
-            }
-        }
+        // إعداد قاعدة البيانات المحلية
+        const DB_NAME = "chatApp";
+        const MESSAGES_STORE = "messages";
+        const ROOMS_STORE = "rooms";
+        const USERS_STORE = "users";
         
         // تبديل بين التبويبات
         function switchTab(tab) {
@@ -341,7 +298,16 @@
             // إنشاء رمز عشوائي للغرفة (6 أرقام)
             const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
             
-            connectWebSocket();
+            // حفظ بيانات الغرفة في التخزين المحلي
+            const roomData = {
+                id: roomCode,
+                creator: userName,
+                createdAt: new Date().toISOString(),
+                users: [userName]
+            };
+            
+            localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+            
             enterChatRoom(userName, roomCode, true);
         }
         
@@ -360,8 +326,30 @@
                 return;
             }
             
-            connectWebSocket();
-            enterChatRoom(userName, roomCode, false);
+            // التحقق من وجود الغرفة في التخزين المحلي
+            const roomData = JSON.parse(localStorage.getItem(`room_${roomCode}`) || "null");
+            
+            if (!roomData) {
+                // إذا لم تكن الغرفة موجودة، يمكن إنشاؤها تلقائياً
+                const newRoomData = {
+                    id: roomCode,
+                    creator: userName,
+                    createdAt: new Date().toISOString(),
+                    users: [userName]
+                };
+                
+                localStorage.setItem(`room_${roomCode}`, JSON.stringify(newRoomData));
+                
+                enterChatRoom(userName, roomCode, true);
+            } else {
+                // إضافة المستخدم إلى قائمة المستخدمين في الغرفة
+                if (!roomData.users.includes(userName)) {
+                    roomData.users.push(userName);
+                    localStorage.setItem(`room_${roomCode}`, JSON.stringify(roomData));
+                }
+                
+                enterChatRoom(userName, roomCode, false);
+            }
         }
         
         // الدخول إلى غرفة الدردشة
@@ -376,32 +364,102 @@
             // عرض رمز الغرفة
             document.getElementById('room-code-display').textContent = `رمز الغرفة: ${roomCode}`;
             
+            // تحميل قائمة المستخدمين
+            loadUserList();
+            
+            // تحميل سجل الرسائل
+            loadMessages();
+            
             // إضافة رسالة ترحيبية
             if (isCreator) {
                 addSystemMessage(`تم إنشاء الغرفة بنجاح! شارك الرمز ${roomCode} مع من تريد دعوته.`);
+                
+                // إنشاء رسالة ترحيبية في سجل الرسائل
+                const welcomeMessage = {
+                    id: generateMessageId(),
+                    room: roomCode,
+                    type: "system",
+                    text: `تم إنشاء الغرفة بواسطة ${userName}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                saveMessage(welcomeMessage);
             } else {
                 addSystemMessage(`تم الانضمام للغرفة بنجاح!`);
+                
+                // إنشاء رسالة انضمام في سجل الرسائل
+                const joinMessage = {
+                    id: generateMessageId(),
+                    room: roomCode,
+                    type: "system",
+                    text: `${userName} انضم إلى الغرفة`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                saveMessage(joinMessage);
             }
             
-            // إرسال إشعار الانضمام
-            setTimeout(() => {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    sendToServer({
-                        type: "join",
-                        room: roomCode,
-                        user: userName
-                    });
-                    
-                    // طلب قائمة المستخدمين
-                    sendToServer({
-                        type: "getUsers",
-                        room: roomCode
-                    });
-                }
-            }, 1000);
+            // تحديث بيانات المزامنة
+            updateSyncData();
+        }
+        
+        // تحميل قائمة المستخدمين
+        function loadUserList() {
+            const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = "";
             
-            // إضافة المستخدم الحالي للقائمة
-            addUserToList(userName);
+            if (roomData && roomData.users) {
+                userListArray = roomData.users;
+                
+                roomData.users.forEach(user => {
+                    const userItem = document.createElement('div');
+                    userItem.classList.add('user-item');
+                    userItem.textContent = user + (user === currentUser ? ' (أنت)' : '');
+                    userList.appendChild(userItem);
+                });
+            }
+        }
+        
+        // تحميل سجل الرسائل
+        function loadMessages() {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = "";
+            
+            // الحصول على جميع مفاتيح localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                
+                // التحقق مما إذا كان المفتاح يبدأ بـ message_ ويحتوي على رمز الغرفة الحالية
+                if (key.startsWith(`message_${currentRoom}_`)) {
+                    const message = JSON.parse(localStorage.getItem(key));
+                    
+                    switch (message.type) {
+                        case "user":
+                            // رسالة مستخدم عادية
+                            addMessage(message.sender, message.text, message.sender === currentUser);
+                            break;
+                        case "system":
+                            // رسالة نظامية
+                            addSystemMessage(message.text);
+                            break;
+                    }
+                }
+            }
+        }
+        
+        // إنشاء معرف فريد للرسالة
+        function generateMessageId() {
+            return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        // حفظ رسالة في قاعدة البيانات المحلية
+        function saveMessage(message) {
+            const messageKey = `message_${message.room}_${message.id}`;
+            localStorage.setItem(messageKey, JSON.stringify(message));
+            
+            // تحديث بيانات المزامنة
+            updateSyncData();
         }
         
         // إضافة رسالة نظامية
@@ -447,53 +505,28 @@
             const messageText = messageInput.value.trim();
             
             if (messageText) {
-                // إرسال الرسالة إلى الخادم
-                sendToServer({
-                    type: "message",
+                // إنشاء كائن الرسالة
+                const message = {
+                    id: generateMessageId(),
                     room: currentRoom,
+                    type: "user",
                     sender: currentUser,
-                    text: messageText
-                });
+                    text: messageText,
+                    timestamp: new Date().toISOString()
+                };
                 
-                // إضافة الرسالة محلياً
+                // حفظ الرسالة في قاعدة البيانات المحلية
+                saveMessage(message);
+                
+                // إضافة الرسالة إلى الواجهة
                 addMessage(currentUser, messageText, true);
                 
                 // مسح حقل الإدخال
                 messageInput.value = '';
+                
+                // تحديث بيانات المزامنة
+                updateSyncData();
             }
-        }
-        
-        // إضافة مستخدم إلى القائمة
-        function addUserToList(username) {
-            const userList = document.getElementById('user-list');
-            
-            // التحقق مما إذا كان المستخدم موجوداً بالفعل
-            const existingUser = document.querySelector(`.user-item[data-username="${username}"]`);
-            if (!existingUser) {
-                const userItem = document.createElement('div');
-                userItem.classList.add('user-item');
-                userItem.setAttribute('data-username', username);
-                userItem.textContent = username;
-                userList.appendChild(userItem);
-            }
-        }
-        
-        // إزالة مستخدم من القائمة
-        function removeUserFromList(username) {
-            const userItem = document.querySelector(`.user-item[data-username="${username}"]`);
-            if (userItem) {
-                userItem.remove();
-            }
-        }
-        
-        // تحديث قائمة المستخدمين
-        function updateUserList(users) {
-            const userList = document.getElementById('user-list');
-            userList.innerHTML = '';
-            
-            users.forEach(user => {
-                addUserToList(user);
-            });
         }
         
         // السماح بإرسال الرسالة بالضغط على Enter
@@ -505,18 +538,27 @@
         
         // مغادرة الغرفة
         function leaveRoom() {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                // إرسال إشعار المغادرة
-                sendToServer({
-                    type: "leave",
+            if (currentRoom) {
+                // إنشاء رسالة مغادرة في سجل الرسائل
+                const leaveMessage = {
+                    id: generateMessageId(),
                     room: currentRoom,
-                    user: currentUser
-                });
+                    type: "system",
+                    text: `${currentUser} غادر الغرفة`,
+                    timestamp: new Date().toISOString()
+                };
                 
-                // إغلاق الاتصال
-                socket.close();
+                saveMessage(leaveMessage);
+                
+                // إزالة المستخدم من قائمة المستخدمين في الغرفة
+                const roomData = JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null");
+                if (roomData && roomData.users) {
+                    roomData.users = roomData.users.filter(user => user !== currentUser);
+                    localStorage.setItem(`room_${currentRoom}`, JSON.stringify(roomData));
+                }
             }
             
+            // إعادة تعيين الواجهة
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('login-area').style.display = 'block';
             document.getElementById('messages').innerHTML = '';
@@ -524,30 +566,110 @@
             document.getElementById('create-name').value = '';
             document.getElementById('join-name').value = '';
             document.getElementById('room-code').value = '';
+            document.getElementById('sync-area').style.display = 'none';
             
             currentUser = "";
             currentRoom = "";
         }
         
-        // عند تحميل الصفحة
-        window.addEventListener('load', function() {
-            // تجهيز عناصر الواجهة
-        });
+        // عرض/إخفاء منطقة المزامنة
+        function toggleSyncArea() {
+            const syncArea = document.getElementById('sync-area');
+            if (syncArea.style.display === 'none' || !syncArea.style.display) {
+                syncArea.style.display = 'block';
+                updateSyncData();
+            } else {
+                syncArea.style.display = 'none';
+            }
+        }
         
-        // عند إغلاق الصفحة أو تحديثها
-        window.addEventListener('beforeunload', function() {
-            if (currentRoom && socket) {
-                // إرسال إشعار المغادرة
-                sendToServer({
-                    type: "leave",
-                    room: currentRoom,
-                    user: currentUser
+        // تحديث بيانات المزامنة
+        function updateSyncData() {
+            if (document.getElementById('sync-area').style.display === 'block' && currentRoom) {
+                // جمع كل البيانات المتعلقة بالغرفة الحالية
+                const syncData = {
+                    room: JSON.parse(localStorage.getItem(`room_${currentRoom}`) || "null"),
+                    messages: []
+                };
+                
+                // جمع جميع الرسائل المتعلقة بالغرفة
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith(`message_${currentRoom}_`)) {
+                        syncData.messages.push(JSON.parse(localStorage.getItem(key)));
+                    }
+                }
+                
+                // تحويل البيانات إلى نص JSON وترميزها
+                const jsonData = JSON.stringify(syncData);
+                const encodedData = btoa(jsonData);
+                
+                document.getElementById('share-data').value = encodedData;
+            }
+        }
+        
+        // نسخ بيانات المزامنة
+        function copyShareData() {
+            const shareDataTextarea = document.getElementById('share-data');
+            shareDataTextarea.select();
+            document.execCommand('copy');
+            
+            showNotification('تم نسخ البيانات بنجاح!');
+        }
+        
+        // تحميل البيانات المشتركة
+        function loadSharedData() {
+            const loadDataTextarea = document.getElementById('load-data');
+            const encodedData = loadDataTextarea.value.trim();
+            
+            if (!encodedData) {
+                showNotification('الرجاء إدخال البيانات المشتركة أولاً', 'error');
+                return;
+            }
+            
+            try {
+                // فك ترميز البيانات وتحويلها إلى كائن JavaScript
+                const jsonData = atob(encodedData);
+                const syncData = JSON.parse(jsonData);
+                
+                // التحقق من صحة البيانات
+                if (!syncData.room || !syncData.room.id) {
+                    throw new Error('بيانات غير صالحة');
+                }
+                
+                // تحديث بيانات الغرفة
+                localStorage.setItem(`room_${syncData.room.id}`, JSON.stringify(syncData.room));
+                
+                // تحديث الرسائل
+                syncData.messages.forEach(message => {
+                    const messageKey = `message_${message.room}_${message.id}`;
+                    localStorage.setItem(messageKey, JSON.stringify(message));
                 });
                 
-                // إغلاق الاتصال
-                socket.close();
+                // إذا كان المستخدم في نفس الغرفة، تحديث الواجهة
+                if (currentRoom === syncData.room.id) {
+                    loadUserList();
+                    loadMessages();
+                }
+                
+                showNotification('تم تحميل البيانات بنجاح!');
+                loadDataTextarea.value = '';
+            } catch (error) {
+                showNotification('خطأ في تحميل البيانات: ' + error.message, 'error');
             }
-        });
+        }
+        
+        // عرض إشعار
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.backgroundColor = type === 'success' ? 'rgba(0, 128, 0, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
     </script>
 </body>
 </html>
